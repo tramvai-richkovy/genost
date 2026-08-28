@@ -2,6 +2,24 @@
 
 This file preserves the original implementation plan and completed checklist through 2026-08-25. Active work now lives in `docs/plan.md`.
 
+## Local Python 3.11 Worker Test Environment — Completed 2026-08-28
+
+- [x] Provisioned repo `.venv` with local CPython 3.11.16 through `uv`, leaving Ubuntu's externally managed `/usr/bin/python3` unchanged.
+- [x] Installed the worker stack with CPU Torch, TorchCodec, TensorFlow 2.14, and `basic-pitch`, while excluding `omnizart` from the default worker dependency path.
+- [x] Pinned NumPy below 2.0 for TensorFlow/basic-pitch ABI compatibility and added TorchCodec for current torchaudio WAV load/save behavior.
+- [x] Moved `omnizart` to optional `genost_worker/requirements-omnizart.txt`, since its Linux install needs PortAudio headers through PyAudio.
+- [x] Updated SMTV suite defaults and plan references to use `../games/ost_drafts` instead of the legacy `../ost_drafts` POC folder.
+- [x] Fixed the MIDI guide-WAV test to assert output existence before its temporary directory is cleaned up.
+- [x] Verified with the full Python worker suite, backend validation, SMTV script tests against `../games/ost_drafts`, desktop Vitest, Vite production build, Rust `cargo check`, and `git diff --check`.
+
+## Realtime Arranger Preview — Completed 2026-08-28
+
+- [x] Extracted the shared local Tuna-style Web Audio graph into `apps/desktop/src/lib/audio/audioGraph.ts` so realtime preview and offline mixdown use the same gain, block compressor, master delay, master reverb/pre-delay, limiter, output-gain, playable-stem, arrangement-duration, and effect-tail helpers.
+- [x] Hardened `ArrangerRealtimePreview` to start Tone.js transport at the requested timeline offset, schedule active clips from the correct buffer offset after seeking, stop predictably at the arrangement/effect-tail end, and dispose preview players/effects/nodes on project changes.
+- [x] Arranger preview now reports playable clip count, skipped missing/unreadable/empty clips, no-playable-stem errors, and an acid playhead aligned to the timeline grid.
+- [x] Added mocked realtime preview tests covering missing-clip reporting, seek-offset scheduling, and no-playable transport guards.
+- [x] Verified with focused desktop tests, full desktop Vitest, TypeScript/Vite production build, and `git diff --check`.
+
 ## Session Studio Reframe — Completed 2026-08-28
 
 - [x] Imported the archived POC from `../games/music` without generated dependency/build artifacts.

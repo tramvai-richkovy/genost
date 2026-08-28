@@ -35,7 +35,7 @@ from genost_worker.persistence import (  # noqa: E402
 )
 from genost_worker.separation import SEPARATION_MODEL, SeparationError, separate_stem  # noqa: E402
 
-PROJECTS_ROOT = Path(os.environ.get("GENOST_SMTV_PROJECTS_ROOT", ROOT.parent / "ost_drafts"))
+PROJECTS_ROOT = Path(os.environ.get("GENOST_SMTV_PROJECTS_ROOT", ROOT.parent / "games" / "ost_drafts"))
 PROJECT_FOLDERS = (
     "smtv Sketch 01",
     "smtv Sketch 02 - Salt Glass Shinagawa",
@@ -1263,7 +1263,7 @@ def parser() -> argparse.ArgumentParser:
     for command in ("start", "run", "plan"):
         subparser = subparsers.add_parser(command)
         subparser.add_argument("--path", required=True, help="Required directory that receives the exported MP3 files.")
-        subparser.add_argument("--projects-root", default=str(PROJECTS_ROOT), help="GENOST projects root. Defaults to ../ost_drafts.")
+        subparser.add_argument("--projects-root", default=str(PROJECTS_ROOT), help="GENOST projects root. Defaults to ../games/ost_drafts.")
         subparser.add_argument("--backend", default=os.environ.get("GENOST_GENERATION_BACKEND", "auto"), choices=("auto", "mlx", "audiocraft"))
     return argument_parser
 

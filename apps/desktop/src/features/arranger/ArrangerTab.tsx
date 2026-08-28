@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Copy, EllipsisVertical, FastForward, Layers, LoaderCircle, Pause, Play, Rewind, Scissors, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import { useStudioStore } from "../../app/store";
 import {
+  barsToSeconds,
   effectiveBlockTimeSignature,
   formatRenderDurationWarning,
   formatTimeSignature,
@@ -507,16 +508,30 @@ export function ArrangerTab() {
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewPosition, setPreviewPosition] = useState(0);
   const [previewDuration, setPreviewDuration] = useState(0);
+  const [previewPlayableCount, setPreviewPlayableCount] = useState<number | null>(null);
+  const [previewSkippedClips, setPreviewSkippedClips] = useState<Array<{ clipId: string; blockId: string; reason: string }>>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (previewPlaying && previewRef.current) setPreviewPosition(previewRef.current.positionSeconds);
+      if (previewPlaying && previewRef.current) {
+        setPreviewPosition(Math.min(previewRef.current.durationSeconds, previewRef.current.positionSeconds));
+      }
     }, 100);
     return () => window.clearInterval(timer);
   }, [previewPlaying]);
 
   useEffect(() => {
+    previewRef.current?.dispose();
+    previewRef.current = null;
+    setPreviewLoading(false);
+    setPreviewPlaying(false);
+    setPreviewPosition(0);
+    setPreviewDuration(0);
+    setPreviewPlayableCount(null);
+    setPreviewSkippedClips([]);
+    setPreviewError(null);
+
     return () => {
       previewRef.current?.dispose();
       previewRef.current = null;
@@ -601,6 +616,10 @@ export function ArrangerTab() {
     resizePreview ? resizePreview.startBar + resizePreview.bars + 4 : 0,
   );
   const timelineWidth = 120 + timelineBars * timelineBarWidth;
+  const previewBarPosition =
+    previewDuration > 0 && project.song.bpm > 0
+      ? previewPosition / barsToSeconds(1, project.song.bpm, project.song.timeSignature[0])
+      : 0;
 
   async function ensurePreview(): Promise<ArrangerRealtimePreview | null> {
     if (previewRef.current) return previewRef.current;
@@ -617,6 +636,8 @@ export function ArrangerTab() {
       });
       previewRef.current = preview;
       setPreviewDuration(preview.durationSeconds);
+      setPreviewPlayableCount(preview.playableClipCount);
+      setPreviewSkippedClips(preview.skippedClips);
       return preview;
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : String(error));
@@ -629,8 +650,15 @@ export function ArrangerTab() {
   async function playPreview() {
     const preview = await ensurePreview();
     if (!preview) return;
-    preview.play(previewPosition);
-    setPreviewPlaying(true);
+    if (preview.playableClipCount === 0) {
+      setPreviewError(preview.skippedClips.length > 0 ? "No ready stems are available for arranger preview." : "No clips are arranged for preview.");
+      return;
+    }
+    const started = preview.play(previewPosition);
+    setPreviewPlaying(started);
+    if (!started) {
+      setPreviewPosition(0);
+    }
   }
 
   function pausePreview() {
@@ -1012,7 +1040,13 @@ export function ArrangerTab() {
         <button className="icon-button" disabled={previewLoading} onClick={() => seekPreview(-10)} title="Rewind preview 10 seconds" type="button">
           <Rewind size={17} />
         </button>
-        <button className={`icon-button ${previewPlaying ? "active" : ""}`} disabled={previewLoading} onClick={() => void playPreview()} title="Preview arrangement" type="button">
+        <button
+          className={`icon-button ${previewPlaying ? "active" : ""}`}
+          disabled={previewLoading || previewPlaying || previewPlayableCount === 0}
+          onClick={() => void playPreview()}
+          title="Preview arrangement"
+          type="button"
+        >
           {previewLoading ? <LoaderCircle className="animate-spin" size={17} /> : <Play size={17} />}
         </button>
         <button className="icon-button" disabled={!previewPlaying} onClick={pausePreview} title="Pause arrangement preview" type="button">
@@ -1025,8 +1059,18 @@ export function ArrangerTab() {
           <i style={{ width: `${previewDuration > 0 ? Math.min(100, previewPosition / previewDuration * 100) : 0}%` }} />
         </div>
         <span className="status-pill">{Math.floor(previewPosition / 60)}:{String(Math.floor(previewPosition % 60)).padStart(2, "0")} / {previewDuration > 0 ? `${Math.floor(previewDuration / 60)}:${String(Math.floor(previewDuration % 60)).padStart(2, "0")}` : "--:--"}</span>
+        <span className={`status-pill ${previewPlayableCount === 0 ? "warning" : previewPlayableCount ? "ready" : ""}`}>
+          {previewPlayableCount === null ? "preview idle" : `${previewPlayableCount} playable`}
+        </span>
       </div>
       {previewError ? <div className="graph-warning">{previewError}</div> : null}
+      {previewSkippedClips.length > 0 ? (
+        <div className="status-strip warning">
+          Preview skipped {previewSkippedClips.length} clip{previewSkippedClips.length === 1 ? "" : "s"}:{" "}
+          {previewSkippedClips.slice(0, 3).map((clip) => clip.reason).join("; ")}
+          {previewSkippedClips.length > 3 ? `; +${previewSkippedClips.length - 3} more` : ""}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-4">
         <div className="block-palette">
           {project.blocks.map((block) => (
@@ -1111,6 +1155,13 @@ export function ArrangerTab() {
             className="timeline-content"
             style={{ "--bar-width": `${timelineBarWidth}px`, width: `${timelineWidth}px` } as BlockAccentStyle}
           >
+            {previewDuration > 0 ? (
+              <div
+                aria-hidden="true"
+                className="timeline-playhead"
+                style={{ left: `${120 + previewBarPosition * timelineBarWidth}px` }}
+              />
+            ) : null}
             {project.arrangement.lanes.map((lane) => (
               <div
                 className={`timeline-lane ${dragPreview?.laneId === lane.id ? "drop-active" : ""}`}

@@ -1,0 +1,5 @@
+-r requirements.txt
+
+# Optional drum audio-to-MIDI backend. On Linux, PyAudio requires system
+# PortAudio headers such as the Ubuntu package portaudio19-dev.
+omnizart>=0.5

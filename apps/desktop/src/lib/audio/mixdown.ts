@@ -2,12 +2,21 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { exists, mkdir, writeFile } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import Tuna from "./tuna";
+import {
+  connectBlockMixGraph,
+  connectMasterMixGraph,
+  dbToGain,
+  findPlayableStemById,
+  getArrangementEndSeconds,
+  getMasterEffectTailSeconds,
+  type SkippedAudioClip,
+} from "./audioGraph";
 import { barsToSeconds, nowIso } from "../project/format";
 import { writeStemSidecar } from "../project/storage";
-import type { GenostBlock, GenostProject, GenostStem } from "../schema/project";
+import type { GenostProject } from "../schema/project";
 import { isUriAssetPath, resolveProjectAssetPath } from "./paths";
 
-export type SkippedMixClip = { clipId: string; blockId: string; reason: string };
+export type SkippedMixClip = SkippedAudioClip;
 export type MixBuildResult = {
   absolutePath: string;
   relativePath: string;
@@ -18,73 +27,11 @@ export type MixBuildResult = {
   skippedClips: SkippedMixClip[];
 };
 
-function dbToGain(db: number): number {
-  return 10 ** (db / 20);
-}
-
-function stemForClip(project: GenostProject, stemId: string | null): GenostStem | null {
-  if (!stemId) return null;
-  return project.stems.find((stem) => stem.id === stemId && ["ready", "stale"].includes(stem.status)) ?? null;
-}
-
 async function decodeStem(context: BaseAudioContext, path: string): Promise<AudioBuffer> {
   const source = isUriAssetPath(path) ? path : convertFileSrc(path);
   const response = await fetch(source);
   if (!response.ok) throw new Error(`Could not read stem audio (${response.status}): ${path}`);
   return context.decodeAudioData(await response.arrayBuffer());
-}
-
-function makeImpulse(context: BaseAudioContext, seconds: number, dampeningHz: number): AudioBuffer {
-  const length = Math.max(1, Math.ceil(seconds * context.sampleRate));
-  const impulse = context.createBuffer(2, length, context.sampleRate);
-  const damping = Math.max(0.4, Math.min(8, dampeningHz / 2200));
-  for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
-    const data = impulse.getChannelData(channel);
-    for (let index = 0; index < length; index += 1) {
-      const time = index / length;
-      data[index] = (Math.random() * 2 - 1) * (1 - time) ** damping;
-    }
-  }
-  return impulse;
-}
-
-function connectBlockGraph(
-  context: OfflineAudioContext,
-  tuna: Tuna,
-  block: GenostBlock,
-  masterInput: AudioNode,
-  delayInput: AudioNode | null,
-  reverbInput: AudioNode | null,
-): AudioNode {
-  const gain = new tuna.Gain({ gain: dbToGain(block.volumeDb), bypass: false });
-  let output: AudioNode = gain.output;
-  if (block.compressorEnabled) {
-    const compressor = new tuna.Compressor({
-      threshold: -18,
-      ratio: 4,
-      attack: 8,
-      release: 180,
-      makeupGain: 0,
-      automakeup: false,
-      bypass: false,
-    });
-    gain.connect(compressor.input);
-    output = compressor.output;
-  }
-  output.connect(masterInput);
-  if (delayInput && block.delaySend > 0) {
-    const send = context.createGain();
-    send.gain.value = block.delaySend;
-    output.connect(send);
-    send.connect(delayInput);
-  }
-  if (reverbInput && block.reverbSend > 0) {
-    const send = context.createGain();
-    send.gain.value = block.reverbSend;
-    output.connect(send);
-    send.connect(reverbInput);
-  }
-  return gain.input;
 }
 
 function peakOf(buffer: AudioBuffer): number {
@@ -163,63 +110,18 @@ function encodePcm24Wav(buffer: AudioBuffer): Uint8Array {
 
 export async function buildArrangerMix(projectPath: string, project: GenostProject): Promise<MixBuildResult> {
   const clips = project.arrangement.lanes.flatMap((lane) => lane.clips);
-  const endSeconds = Math.max(
-    1,
-    ...clips.map((clip) =>
-      barsToSeconds(clip.startBar + clip.bars, project.song.bpm, project.song.timeSignature[0]),
-    ),
-  );
-  const effectTail = Math.max(
-    project.mix.masterReverbEnabled ? project.mix.masterReverbDecaySeconds : 0,
-    project.mix.masterDelayEnabled ? (project.mix.masterDelayTimeMs / 1000) * 4 : 0,
-  );
+  const endSeconds = Math.max(1, getArrangementEndSeconds(project));
+  const effectTail = getMasterEffectTailSeconds(project.mix);
   const durationSeconds = endSeconds + effectTail;
   const context = new OfflineAudioContext(2, Math.ceil(durationSeconds * project.song.sampleRate), project.song.sampleRate);
   const tuna = new Tuna(context);
-  const masterInput = context.createGain();
-  const masterDry = context.createGain();
-  masterInput.connect(masterDry);
-
-  const delay = project.mix.masterDelayEnabled
-    ? new tuna.Delay({
-        delayTime: project.mix.masterDelayTimeMs,
-        feedback: project.mix.masterDelayFeedback,
-        cutoff: project.mix.masterDelayFilterHz,
-        dryLevel: 0,
-        wetLevel: project.mix.masterDelay,
-        bypass: false,
-      })
-    : null;
-  const reverb = project.mix.masterReverbEnabled
-    ? new tuna.Convolver({ dryLevel: 0, wetLevel: project.mix.masterReverb, level: 1, bypass: false })
-    : null;
-  if (reverb) {
-    const convolver = (reverb as unknown as { convolver: ConvolverNode }).convolver;
-    convolver.buffer = makeImpulse(context, project.mix.masterReverbDecaySeconds, project.mix.masterReverbDampeningHz);
-  }
-
-  const limiter = new tuna.Compressor({
-    threshold: project.mix.masterLimiter ? project.mix.masterLimiterThresholdDb : 0,
-    ratio: project.mix.masterLimiter ? 20 : 1,
-    attack: 1,
-    release: project.mix.masterLimiterReleaseMs,
-    makeupGain: 0,
-    automakeup: false,
-    bypass: !project.mix.masterLimiter,
-  });
-  const output = context.createGain();
-  output.gain.value = dbToGain(project.mix.outputGainDb);
-  masterDry.connect(limiter.input);
-  delay?.connect(limiter.input);
-  reverb?.connect(limiter.input);
-  limiter.connect(output);
-  output.connect(context.destination);
+  const master = connectMasterMixGraph(context, tuna, project.mix);
 
   const blockInputs = new Map<string, AudioNode>();
   const skippedClips: SkippedMixClip[] = [];
   for (const clip of clips) {
     const block = project.blocks.find((item) => item.id === clip.blockId);
-    const stem = stemForClip(project, clip.stemId);
+    const stem = findPlayableStemById(project, clip.stemId);
     const absolutePath = resolveProjectAssetPath(projectPath, stem?.filePath);
     if (!block || !stem || !absolutePath) {
       skippedClips.push({ clipId: clip.id, blockId: clip.blockId, reason: !block ? "missing block" : "missing playable stem" });
@@ -227,14 +129,7 @@ export async function buildArrangerMix(projectPath: string, project: GenostProje
     }
     try {
       const buffer = await decodeStem(context, absolutePath);
-      const input = blockInputs.get(block.id) ?? connectBlockGraph(
-        context,
-        tuna,
-        block,
-        masterInput,
-        delay?.input ?? null,
-        reverb?.input ?? null,
-      );
+      const input = blockInputs.get(block.id) ?? connectBlockMixGraph(context, tuna, block, master).input;
       blockInputs.set(block.id, input);
       const source = context.createBufferSource();
       const clipGain = context.createGain();

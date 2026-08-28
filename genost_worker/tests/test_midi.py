@@ -57,10 +57,10 @@ class MidiWorkflowTests(unittest.TestCase):
 
             result = midi_to_clean_guide_wav(midi, destination, sample_rate=8000)
 
-        self.assertEqual(result.file_name, "guide.wav")
-        self.assertEqual(result.sample_rate, 8000)
-        self.assertGreater(result.duration_seconds, 0.2)
-        self.assertTrue(destination.exists())
+            self.assertEqual(result.file_name, "guide.wav")
+            self.assertEqual(result.sample_rate, 8000)
+            self.assertGreater(result.duration_seconds, 0.2)
+            self.assertTrue(destination.exists())
 
 
 if __name__ == "__main__":

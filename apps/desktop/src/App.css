@@ -204,6 +204,27 @@ button:disabled {
   height: 100%;
 }
 
+.status-strip {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-cyan) 8%, var(--color-genost-panel));
+  border: 1px solid color-mix(in oklab, var(--color-genost-cyan) 45%, var(--color-genost-line));
+  color: var(--color-genost-muted);
+  display: flex;
+  font-family: var(--cp-font-mono);
+  font-size: 0.75rem;
+  min-height: 2.1rem;
+  overflow: hidden;
+  padding: 0.45rem 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-strip.warning {
+  background: color-mix(in oklab, var(--color-genost-warn) 11%, var(--color-genost-panel));
+  border-color: color-mix(in oklab, var(--color-genost-warn) 70%, var(--color-genost-line));
+  color: var(--color-genost-warn);
+}
+
 .timeline-clip > :not(.clip-waveform) {
   position: relative;
   z-index: 1;
@@ -644,6 +665,7 @@ input[type="range"].field {
 
 .timeline-content {
   min-width: 100%;
+  position: relative;
 }
 
 .timeline-lane {
@@ -743,6 +765,17 @@ input[type="range"].field {
   top: 0;
   bottom: 0;
   width: 4px;
+}
+
+.timeline-playhead {
+  background: var(--color-genost-acid);
+  bottom: 0;
+  box-shadow: 0 0 14px var(--color-genost-acid);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 2px;
+  z-index: 8;
 }
 
 .session-studio {

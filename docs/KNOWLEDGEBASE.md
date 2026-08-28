@@ -26,6 +26,7 @@ The user selects a projects folder, opens or creates a song project, defines the
 - Mandatory musical context and graph-cycle checks block invalid render queue actions.
 - Blocks support generated and imported-audio sources, instrument focus, sound character, separator target metadata, optional meter overrides, prompt controls, effects sends, and non-destructive removal.
 - Arranger supports dense layered clips, variations 1-16, dependency links, drag/drop with grab offsets, whole-bar resize, clone, split, delete, zoom, shared scrolling, variation presence indicators, and duration guards.
+- Arranger realtime preview uses Tone.js transport plus the shared local Tuna-style graph, schedules seeked playback from the correct stem offsets, shows playable/skipped clip status, and overlays a timeline playhead.
 - Components filters/selects rows, renders selected/all, previews and reveals audio, archives revisions, shows progress/elapsed time, and exposes structured errors plus validation summaries.
 - Tauri's scoped asset protocol serves project-local stems, separation outputs, waveforms, and mixes to the WebView for preview; its allowlist covers user project folders under the home directory, temporary directory, `/Volumes`, and `/home`.
 - Premix keeps append-only separation history in project data but suppresses failed attempts in the workbench once a later ready bundle exists for the same source stem; current failures remain visible and ready bundles show their source filename.
@@ -35,7 +36,7 @@ The user selects a projects folder, opens or creates a song project, defines the
 - Later same-block variations queue against the canonical variation-1 anchor. If that anchor is missing, queue planning synthesizes variation 1 before the later variation.
 - Dense Components and Arranger badges consistently report missing, stale, input-missing, validation-failed, duration-blocked, and graph-cycle-blocked states.
 - The worker queue is asynchronous and single-worker. Persisted `rendering` stems reconcile after restart through a pure tested decision helper.
-- Offline mix build uses `OfflineAudioContext`, local Tuna-style Web Audio effects, short boundary fades, missing-clip reports, 24-bit WAV output, and mix sidecars under `MIXES/`.
+- Offline mix build uses `OfflineAudioContext`, the shared local Tuna-style Web Audio graph, short boundary fades, missing-clip reports, 24-bit WAV output, and mix sidecars under `MIXES/`.
 - The published `tunajs@1.0.4` package dependency was removed because it pulled an obsolete nested `npm@6` runtime tree. The current local wrapper is original GENOST code and vendors no upstream TUNA source.
 - Recovered `Ash Meridian` and `Covenant Breaker` projects exist as implementation history with validated current stems, clips, WAV masters, sidecars, and recoverable prior revisions.
 

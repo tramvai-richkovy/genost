@@ -16,11 +16,11 @@ Put blocking or review-needed decisions in `QnA` with a suggested answer. Do not
 
 ## Next Pickup
 
-Start with Realtime Player and UI Completion. The first concrete task is wiring Tone.js transport and the local Tuna-style graph for arranger preview/playback, matching the implemented offline graph closely enough for dependable arrangement decisions.
+Continue Realtime Player and UI Completion. The next concrete task is verifying and closing out final-mix loudness normalization and waveform previews for Player and Arranger.
 
 ## 1. Realtime Player And UI Completion
 
-- [ ] Wire Tone.js transport and the local Tuna-style graph for arranger preview/playback, matching the implemented offline graph closely enough for dependable decisions.
+- [x] Wire Tone.js transport and the local Tuna-style graph for arranger preview/playback, matching the implemented offline graph closely enough for dependable decisions.
 - [ ] Add final-mix loudness normalization and waveform previews for Player and Arranger.
 - [ ] Add compact empty/error states for unreadable roots, invalid projects, missing permissions, and empty project folders.
 - [ ] Add BPM, key, and model-cache-path validation plus compact saved/dirty/error state.
@@ -51,7 +51,8 @@ Start with Realtime Player and UI Completion. The first concrete task is wiring 
 
 ## 4. SMTV Preflight Before Live GENOST
 
-- [ ] Review the whole-song and every block prompt in all five `../ost_drafts` SMTV projects.
+- [ ] Make `scripts/preflight_smtv_projects.py` idempotent for already-cleaned or renamed SMTV project blocks before rerunning cleanup against live drafts.
+- [ ] Review the whole-song and every block prompt in all five `../games/ost_drafts` SMTV projects.
 - [ ] Remove character/place/lore names, visual scene prose, non-audible suggestions, duplication, contradictions, and low-priority prompt noise.
 - [ ] Preserve BPM, meter, key/mode, mood, energy arc, block role, allowed instruments, strict exclusions, vocal policy, isolation, and mix requirements.
 - [ ] Keep later-variation wording concise and place recognizable-v1 conditioning ahead of retained musical constraints.
@@ -61,7 +62,7 @@ Start with Realtime Player and UI Completion. The first concrete task is wiring 
 ## 5. Live GENOST Verification
 
 - [ ] Start GENOST only after sections 1-4 and their code-level checks are complete.
-- [ ] Reopen `../ost_drafts/smtv Sketch 01`, reproduce the single-stem path, and diagnose any remaining queued/rendering failure using managed-worker logs and persisted state.
+- [ ] Reopen `../games/ost_drafts/smtv Sketch 01`, reproduce the single-stem path, and diagnose any remaining queued/rendering failure using managed-worker logs and persisted state.
 - [ ] Verify Atmosphere v1 renders first and every later variation uses that exact ready v1 WAV with MusicGen Melody and the retained constraints.
 - [ ] Verify category-aware validation and complete the five-project SMTV render/export run.
 - [ ] Verify all separator outputs preview independently and arbitrary selected subsets merge without changing/deleting sources.

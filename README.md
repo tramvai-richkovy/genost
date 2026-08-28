@@ -57,10 +57,15 @@ npm test
 npm run build
 ```
 
-Python worker tests require the worker dependency environment from `genost_worker/requirements.txt`. In this shell, the model-free Python subset can run with:
+Python worker tests require the worker dependency environment from `genost_worker/requirements.txt`. The current local test environment uses Python 3.11 in `.venv` so `basic-pitch` can load its TensorFlow dependency:
 
 ```bash
-python3 -m unittest genost_worker.tests.test_model_preflight genost_worker.tests.test_midi genost_worker.tests.test_persistence
+python3 -m uv venv --python 3.11 .venv
+python3 -m uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cpu "torch>=2.1,<3" "torchaudio>=2.1,<3" "torchcodec>=0.1"
+python3 -m uv pip install --python .venv/bin/python -r genost_worker/requirements.txt
+.venv/bin/python -m unittest discover -s genost_worker/tests
 ```
+
+`omnizart` is optional for drum audio-to-MIDI conversion and is kept outside the base worker requirements. Install `genost_worker/requirements-omnizart.txt` only on machines with the needed system audio headers.
 
 See [docs/macos-setup.md](docs/macos-setup.md) and [docs/project-format.md](docs/project-format.md).
