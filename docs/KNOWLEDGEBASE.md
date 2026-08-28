@@ -22,21 +22,31 @@ The user selects a projects folder, opens or creates a song project, defines the
 ## Current Implemented Behavior
 
 - Project Browser, Composition, Blocks, Arranger, Graph, Premix, Components, and Player persist portable project state through strict Zod schemas.
+- The desktop entrypoint mounts the portable project browser/workspace and render processor. The retired session/artifact prototype, its store/schema/storage layer, and its WaveRoll dependency are not part of the product source tree or bundle.
+- Project Browser distinguishes no selected root, an empty valid root, root permission/read failures, and invalid or unreadable project folders. A bad project is skipped and reported without hiding valid sibling projects.
 - Composition stores structured BPM, time signature, swing, key, mood, genre, reference, purpose, avoid, rhythm, palette, production, arrangement, cache path, and reference-track inputs.
 - Mandatory musical context and graph-cycle checks block invalid render queue actions.
 - Blocks support generated and imported-audio sources, instrument focus, sound character, separator target metadata, optional meter overrides, prompt controls, effects sends, and non-destructive removal.
 - Arranger supports dense layered clips, variations 1-16, dependency links, drag/drop with grab offsets, whole-bar resize, clone, split, delete, zoom, shared scrolling, variation presence indicators, and duration guards.
 - Arranger realtime preview uses Tone.js transport plus the shared local Tuna-style graph, schedules seeked playback from the correct stem offsets, shows playable/skipped clip status, and overlays a timeline playhead.
 - Components filters/selects rows, renders selected/all, previews and reveals audio, archives revisions, shows progress/elapsed time, and exposes structured errors plus validation summaries.
+- Blocks exposes the same requirement queue and non-destructive archive helpers for implemented melodies, with render, regenerate, preview, reveal, separation, and archive controls beside each entry.
 - Tauri's scoped asset protocol serves project-local stems, separation outputs, waveforms, and mixes to the WebView for preview; its allowlist covers user project folders under the home directory, temporary directory, `/Volumes`, and `/home`.
 - Premix keeps append-only separation history in project data but suppresses failed attempts in the workbench once a later ready bundle exists for the same source stem; current failures remain visible and ready bundles show their source filename.
 - Premix schedules every output in a ready bundle against one Web Audio clock for synchronized looping. Per-output levels persist from -60 dB through +6 dB and are reused by level-aware non-destructive merges.
+- `scripts/smoke-test-separation.py` provides an optional short real-model check that retains the raw fixture and validates all six `htdemucs_6s` outputs; temporary output is cleaned unless an output directory is requested.
 - Components and Arranger share project-level render requirement derivation from `apps/desktop/src/lib/project/requirements.ts`.
 - Identical requirements reuse one component row. Different variation numbers remain different stem identities.
 - Later same-block variations queue against the canonical variation-1 anchor. If that anchor is missing, queue planning synthesizes variation 1 before the later variation.
 - Dense Components and Arranger badges consistently report missing, stale, input-missing, validation-failed, duration-blocked, and graph-cycle-blocked states.
+- The desktop window and CSS share a 1180×760 minimum. Dense Components rows scroll horizontally instead of clipping at laptop width; Arranger transport wraps at the minimum width, tabs and palettes scroll, focus-visible styling is global, and studio tabs are keyboard operable.
 - The worker queue is asynchronous and single-worker. Persisted `rendering` stems reconcile after restart through a pure tested decision helper.
-- Offline mix build uses `OfflineAudioContext`, the shared local Tuna-style Web Audio graph, short boundary fades, missing-clip reports, 24-bit WAV output, and mix sidecars under `MIXES/`.
+- The supported Apple Silicon worker environment selects MLX/Metal. AudioCraft and torchaudio are installed only by the optional CPU-diagnostic requirements file; `mlx-audiocraft` still declares PyTorch for model loading/conversion.
+- Local Tauri distribution builds an unsigned PyInstaller one-file worker sidecar before bundling. The normal Tauri config includes that target-suffixed binary, while development falls back to the repository `.venv`.
+- The frozen-worker watchdog tracks existence of the original Tauri PID because PyInstaller inserts a bootloader parent, and the sidecar build explicitly collects MLX's native Metal libraries and shader resources.
+- First-run setup posts the selected cache path and `auto`, `mlx`, or diagnostic `audiocraft` backend to worker preflight before online rendering is enabled. Hardware capability is reported separately, and new projects inherit those generation defaults.
+- Offline mix build uses `OfflineAudioContext`, the shared local Tuna-style Web Audio graph, short boundary fades, missing-clip reports, final normalization toward -14 dB RMS under a -1 dBFS sample-peak ceiling, 24-bit WAV output, and mix sidecars under `MIXES/`.
+- Arranger clips decode their current ready or stale stem into cached peak-bucket waveforms. Player decodes the current final mix through the same waveform component and overlays its playback position.
 - The published `tunajs@1.0.4` package dependency was removed because it pulled an obsolete nested `npm@6` runtime tree. The current local wrapper is original GENOST code and vendors no upstream TUNA source.
 - Recovered `Ash Meridian` and `Covenant Breaker` projects exist as implementation history with validated current stems, clips, WAV masters, sidecars, and recoverable prior revisions.
 

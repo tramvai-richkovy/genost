@@ -78,6 +78,7 @@ export function BlocksTab() {
   const [removalError, setRemovalError] = useState<string | null>(null);
   const [previewStemId, setPreviewStemId] = useState<string | null>(null);
   const [separationBusyId, setSeparationBusyId] = useState<string | null>(null);
+  const [melodyActionError, setMelodyActionError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   if (!activeProject) {
@@ -341,18 +342,28 @@ export function BlocksTab() {
     const stem = project.stems.find((item) => item.id === stemId);
     const path = resolveProjectAssetPath(projectPath, stem?.filePath);
     if (!path || isUriAssetPath(path)) return;
-    await revealItemInDir(path);
-    mutateActiveProject({ type: "reveal_component", summary: "Revealed component from Blocks", payload: { stemId } }, (current) => current);
+    setMelodyActionError(null);
+    try {
+      await revealItemInDir(path);
+      mutateActiveProject({ type: "reveal_component", summary: "Revealed component from Blocks", payload: { stemId } }, (current) => current);
+    } catch (error) {
+      setMelodyActionError(describeProjectStorageError(error, "Revealing component", path));
+    }
   }
 
   async function archiveMelody(stemId: string) {
     const stem = project.stems.find((item) => item.id === stemId);
     if (!stem || !projectPath || ["queued", "rendering"].includes(stem.status)) return;
-    const archivedAssets = await archiveDetachedStemAssets(projectPath, [stem]);
-    mutateActiveProject(
-      { type: "archive_component", summary: "Archived component from Blocks", payload: { stemId, archivedAssets } },
-      (current) => detachGeneratedStems(current, [stemId], archivedAssets, "Archived from Blocks."),
-    );
+    setMelodyActionError(null);
+    try {
+      const archivedAssets = await archiveDetachedStemAssets(projectPath, [stem]);
+      mutateActiveProject(
+        { type: "archive_component", summary: "Archived component from Blocks", payload: { stemId, archivedAssets } },
+        (current) => detachGeneratedStems(current, [stemId], archivedAssets, "Archived from Blocks."),
+      );
+    } catch (error) {
+      setMelodyActionError(describeProjectStorageError(error, "Archiving component", projectPath));
+    }
   }
 
   return (
@@ -382,6 +393,7 @@ export function BlocksTab() {
       </div>
 
       {removalError ? <div className="graph-warning">{removalError}</div> : null}
+      {melodyActionError ? <div className="graph-warning">{melodyActionError}</div> : null}
 
       {project.blocks.map((block) => {
         const timeSignature = effectiveBlockTimeSignature(project, block);
@@ -728,7 +740,9 @@ export function BlocksTab() {
                   <span>Implemented melodies: {block.implementedMelodies.length}</span>
                   {block.implementedMelodies.map((melody) => {
                     const stem = project.stems.find((item) => item.id === melody.stemId);
-                    const hasAudio = Boolean(resolveProjectAssetPath(projectPath, stem?.filePath));
+                    const resolvedAudioPath = resolveProjectAssetPath(projectPath, stem?.filePath);
+                    const hasAudio = Boolean(resolvedAudioPath);
+                    const hasLocalAudio = Boolean(projectPath && resolvedAudioPath && !isUriAssetPath(resolvedAudioPath));
                     const previewing = previewStemId === melody.stemId;
                     return (
                       <div className="implemented-melody-row" key={melody.id}>
@@ -737,9 +751,9 @@ export function BlocksTab() {
                         <button className="icon-button" disabled={renderBlocked || !stem || !["missing", "stale", "failed", "canceled"].includes(stem.status)} onClick={() => queueMelody(melody.stemId, false)} title="Render component" type="button"><WandSparkles size={15} /></button>
                         <button className="icon-button" disabled={renderBlocked || !stem || ["queued", "rendering"].includes(stem.status)} onClick={() => queueMelody(melody.stemId, true)} title="Regenerate component" type="button"><RotateCcw size={15} /></button>
                         <button className={`icon-button ${previewing ? "active" : ""}`} disabled={!hasAudio} onClick={() => toggleMelodyPreview(melody.stemId)} title={previewing ? "Pause preview" : "Preview component"} type="button">{previewing ? <Pause size={15} /> : <Play size={15} />}</button>
-                        <button className="icon-button" disabled={!hasAudio} onClick={() => void revealMelody(melody.stemId)} title="Reveal component" type="button"><FolderOpen size={15} /></button>
-                        <button className="icon-button" disabled={!hasAudio || separationBusyId === melody.stemId} onClick={() => void separateImplementedStem(block.id, melody.stemId)} title="Separate into six retained stems" type="button">{separationBusyId === melody.stemId ? <LoaderCircle className="animate-spin" size={15} /> : <AudioLines size={15} />}</button>
-                        <button className="icon-button danger" disabled={!stem || ["queued", "rendering"].includes(stem.status)} onClick={() => void archiveMelody(melody.stemId)} title="Archive component" type="button"><Archive size={15} /></button>
+                        <button className="icon-button" disabled={!hasLocalAudio} onClick={() => void revealMelody(melody.stemId)} title="Reveal component" type="button"><FolderOpen size={15} /></button>
+                        <button className="icon-button" disabled={!hasLocalAudio || separationBusyId === melody.stemId} onClick={() => void separateImplementedStem(block.id, melody.stemId)} title="Separate into six retained stems" type="button">{separationBusyId === melody.stemId ? <LoaderCircle className="animate-spin" size={15} /> : <AudioLines size={15} />}</button>
+                        <button className="icon-button danger" disabled={!projectPath || !stem || ["queued", "rendering"].includes(stem.status)} onClick={() => void archiveMelody(melody.stemId)} title="Archive component" type="button"><Archive size={15} /></button>
                       </div>
                     );
                   })}

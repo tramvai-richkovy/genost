@@ -41,6 +41,7 @@ describe("project format helpers", () => {
 
     expect(project.song.timeSignature).toEqual([4, 3]);
     expect(project.song.swing).toEqual({ feel: "soft", ratio: 1.35 });
+    expect(project.song.generationBackend).toBe("auto");
     expect(project.song.prompt).toContain("170 BPM");
     expect(project.song.prompt).toContain("swing: Soft swing 1.35:1");
     expect(project.song.prompt).toContain("genre references: techno, intelligent jungle, dub techno");
@@ -136,6 +137,32 @@ describe("project format helpers", () => {
     expect(prompt).toContain("isolated stem target: textured synth pad, subtle noise bed only");
     expect(prompt).toContain("avoid kick drums, snare, hi-hats");
     expect(prompt).toContain("variation 2");
+  });
+
+  it("uses word boundaries and explicit separator targets for isolation exclusions", () => {
+    const project = createEmptyProject("Isolation Test");
+    const block = {
+      ...project.blocks[0],
+      name: "Horn",
+      role: "lead",
+      separatorTarget: "other" as const,
+      instruments: ["detuned horn synth"],
+      melodyDescription: "long tones that answer empty bars",
+      melodyPrompt: "bent warning notes",
+      rhythmFeel: "slow sustained entries",
+      timbre: "unstable pitch",
+    };
+    const hornPrompt = composeStemPrompt(project, block, 1);
+    expect(hornPrompt).toContain("avoid kick drums, snare, hi-hats, full drum kit, basslines, pad washes");
+    expect(hornPrompt).not.toContain("avoid basslines, sub bass, synth pads, chord progressions, lead melodies");
+
+    const vocalPrompt = composeStemPrompt(project, {
+      ...block,
+      name: "Sub Choir",
+      separatorTarget: "vocals",
+      instruments: ["wordless choir", "subharmonic pad"],
+    }, 1);
+    expect(vocalPrompt).toContain("avoid lyrics, kick drums, snare, basslines, lead synths");
   });
 
   it("defaults legacy blocks to clean sound character", () => {

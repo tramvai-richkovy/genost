@@ -123,6 +123,60 @@ class SeparationTests(unittest.TestCase):
             self.assertFalse(bundle.exists())
             self.assertEqual(list(root.glob(".*.tmp")), [])
 
+    def test_invalid_output_leaves_raw_stem_and_no_partial_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = root / "raw.wav"
+            bundle = root / "bundle"
+            write_fixture_wav(raw)
+
+            def fake_runner(command: list[str], **_kwargs: object) -> None:
+                output_dir = Path(command[command.index("--output_dir") + 1])
+                for label in SEPARATION_LABELS:
+                    output = output_dir / f"raw_({label.title()}).wav"
+                    if label == "piano":
+                        output.write_bytes(b"not a wav")
+                    else:
+                        write_fixture_wav(output)
+
+            with (
+                patch("genost_worker.separation._separator_binary", return_value=Path("/usr/bin/true")),
+                self.assertRaises(SeparationError) as raised,
+            ):
+                separate_stem(raw, bundle, model_cache_path=str(root / "cache"), runner=fake_runner)
+
+            self.assertEqual(raised.exception.code, "separator_output_invalid")
+            self.assertTrue(raw.exists())
+            self.assertFalse(bundle.exists())
+            self.assertEqual(list(root.glob(".*.tmp")), [])
+
+    def test_bundle_rename_failure_keeps_source_and_cleans_staging_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = root / "raw.wav"
+            bundle = root / "bundle"
+            write_fixture_wav(raw)
+
+            def fake_runner(command: list[str], **_kwargs: object) -> None:
+                output_dir = Path(command[command.index("--output_dir") + 1])
+                for label in SEPARATION_LABELS:
+                    write_fixture_wav(output_dir / f"{label}.wav")
+
+            def fail_bundle_publication(_source: Path, _target: Path) -> Path:
+                raise OSError("disk publication failed")
+
+            with (
+                patch("genost_worker.separation._separator_binary", return_value=Path("/usr/bin/true")),
+                patch.object(type(bundle), "replace", autospec=True, side_effect=fail_bundle_publication),
+                self.assertRaises(SeparationError) as raised,
+            ):
+                separate_stem(raw, bundle, model_cache_path=str(root / "cache"), runner=fake_runner)
+
+            self.assertEqual(raised.exception.code, "separator_publication_failed")
+            self.assertTrue(raw.exists())
+            self.assertFalse(bundle.exists())
+            self.assertEqual(list(root.glob(".*.tmp")), [])
+
     def test_arbitrary_subset_merge_preserves_every_source(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -163,6 +217,28 @@ class SeparationTests(unittest.TestCase):
             with self.assertRaises(SeparationError) as range_error:
                 merge_separated_outputs([bass], root / "range.wav", input_gains_db=[12])
             self.assertEqual(range_error.exception.code, "merge_gain_invalid")
+
+    def test_failed_merge_removes_partial_output_and_preserves_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bass = root / "bass.wav"
+            drums = root / "drums.wav"
+            destination = root / "MERGES" / "failed.wav"
+            write_fixture_wav(bass)
+            write_fixture_wav(drums)
+
+            def fail_after_partial_write(command: list[str], **_kwargs: object) -> None:
+                Path(command[-1]).write_bytes(b"partial")
+                raise subprocess.CalledProcessError(1, command, stderr="ffmpeg failed")
+
+            with self.assertRaises(SeparationError) as raised:
+                merge_separated_outputs([bass, drums], destination, runner=fail_after_partial_write)
+
+            self.assertEqual(raised.exception.code, "merge_failed")
+            self.assertFalse(destination.exists())
+            self.assertEqual(list(destination.parent.glob(".*.tmp.wav")), [])
+            self.assertTrue(bass.exists())
+            self.assertTrue(drums.exists())
 
     def test_model_failure_is_structured_and_cleans_temporary_output(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

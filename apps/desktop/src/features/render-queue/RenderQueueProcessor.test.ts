@@ -60,9 +60,22 @@ describe("render queue processor", () => {
       name: "Beat",
       role: "rhythm",
       instruments: ["kick", "metal percussion"],
+      validationCategory: "generic" as const,
     };
 
     expect(audioContentCategoryForBlock(block)).toBe("rhythm");
+  });
+
+  it("uses a reviewed validation category instead of re-inferring it from prompt text", () => {
+    const block = {
+      ...createEmptyProject("Test").blocks[0],
+      name: "Low warning drone",
+      role: "bass atmosphere",
+      instruments: ["sub drone"],
+      validationCategory: "melody" as const,
+    };
+
+    expect(audioContentCategoryForBlock(block)).toBe("melody");
   });
 });
 

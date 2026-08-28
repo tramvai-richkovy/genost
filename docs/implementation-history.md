@@ -2,6 +2,36 @@
 
 This file preserves the original implementation plan and completed checklist through 2026-08-25. Active work now lives in `docs/plan.md`.
 
+## Portable Project Product Cutover — Completed 2026-08-29
+
+- [x] Made the startup gate, portable project browser, DAW project workspace, and render processor the only shipped frontend path.
+- [x] Removed the retired Session Studio component, session store/schema/storage implementation and tests, its WaveRoll dependency and JSX declaration, and its inactive prototype stylesheet.
+- [x] Replaced the obsolete session/artifact format guide with the authoritative portable `genost.json`, command-journal, stem-sidecar, separation, mix, and atomic-write format.
+- [x] Confirmed neither the source tree nor production bundle contains retired Session Studio or WaveRoll symbols.
+- [x] Verified 97 desktop tests with 2 intentional skips, the TypeScript/Vite production build, Rust formatting and compilation, 50 worker tests, 28 script tests, and `git diff --check`.
+
+## Five-Project SMTV Prompt Preflight — Completed 2026-08-28
+
+- [x] Made the preflight byte-for-byte idempotent for already-clean and renamed blocks, corrected its live `../games/ost_drafts` default, and added two-pass regression coverage.
+- [x] Reviewed all five whole-song directions and all 39 composed block prompts, removed prohibited names, replacement duplication, visual/non-audible prose, and contradictory or noisy instructions, while retaining musical constraints and category assignments.
+- [x] Fixed Python isolation matching to use word boundaries and made explicit bass, drums, vocals, guitar, and piano separator targets take precedence in both Python and TypeScript prompt composition.
+- [x] Applied and journaled the cleanup as `code-agent`, confirmed reruns made no further file changes, and validated every live project and journal through desktop Zod schemas.
+
+## Exploratory Multi-Stem Separation — Completed 2026-08-28
+
+- [x] Closed the final product milestone with retention, synchronized preview, arbitrary level-aware subset merge, archive, atomic-publication, malformed-output, and failed-ffmpeg coverage across worker and desktop layers.
+- [x] Added `scripts/smoke-test-separation.py` and ran a three-second local `htdemucs_6s` smoke pass through the isolated separator environment and cached model.
+- [x] Verified the raw fixture remained intact and all six 32 kHz `bass`, `drums`, `guitar`, `piano`, `vocals`, and `other` WAV outputs were retained and readable.
+
+## Automated Coverage And Local macOS Packaging — Completed 2026-08-28
+
+- [x] Expanded recovery and SMTV suite coverage across retry exhaustion, non-destructive archive failures, ffmpeg/MP3 cleanup, dependency-order rendering, and melody-conditioned routing.
+- [x] Added desktop interaction coverage for arranger cloning, queue cancellation, and a complete fixture-tone queue transition with WAV sidecar and command-journal persistence.
+- [x] Removed AudioCraft and torchaudio from the supported MLX environment, kept their pinned CPU backend in an optional diagnostic requirements file, and refactored shared WAV analysis/publication to NumPy and SoundFile.
+- [x] Selected an unsigned PyInstaller worker sidecar for the first local Tauri build, wired it into the primary Tauri bundle configuration, and retained repository `.venv` startup for development.
+- [x] Fixed frozen-worker parent lifecycle monitoring and collected MLX's native Metal resources; verified the packaged worker health endpoint on Apple Silicon with MLX/Metal and both external-cache MusicGen models available.
+- [x] Verified 95 desktop tests, TypeScript/Vite production build, 44 worker tests, 24 script tests, and Rust `cargo check`.
+
 ## Local Python 3.11 Worker Test Environment — Completed 2026-08-28
 
 - [x] Provisioned repo `.venv` with local CPython 3.11.16 through `uv`, leaving Ubuntu's externally managed `/usr/bin/python3` unchanged.
@@ -15,16 +45,23 @@ This file preserves the original implementation plan and completed checklist thr
 ## Realtime Arranger Preview — Completed 2026-08-28
 
 - [x] Extracted the shared local Tuna-style Web Audio graph into `apps/desktop/src/lib/audio/audioGraph.ts` so realtime preview and offline mixdown use the same gain, block compressor, master delay, master reverb/pre-delay, limiter, output-gain, playable-stem, arrangement-duration, and effect-tail helpers.
+- [x] Closed out final-mix normalization toward -14 dB RMS under a -1 dBFS peak ceiling, persisted the resulting metrics in mix sidecars and build journals, and added cached waveform previews to Arranger clips and Player playback with focused peak-bucketing and normalization tests.
+- [x] Added compact Project Browser states for no root, empty roots, permission/read failures, and invalid project folders; scans now retain valid sibling projects while reporting invalid or unreadable entries.
+- [x] Restored the required DAW project browser/workspace and render processor as the active desktop shell after finding the separate session/artifact prototype mounted in their place.
+- [x] Added accessible BPM, key-notation, and absolute model-cache-path validation states plus compact live saved, dirty, saving, and save-error feedback.
+- [x] Closed out implemented-melody actions in Blocks with shared requirement queue/non-destructive archive behavior, actionable reveal/archive failures, truthful disk-only control states, and focused regeneration coverage.
+- [x] Completed first-run backend/cache setup: the gate now validates selected settings through worker preflight, reports hardware separately, blocks online mode until both models and dependencies pass, persists defaults into new projects, and routes renders through the project-selected backend.
+- [x] Audited the DAW shell at its 1180×760 minimum and desktop width, fixed Components-row clipping with contained horizontal scrolling, wrapped Arranger transport at laptop width, preserved the multi-accent palette and stable control sizes, and added keyboard tab-navigation coverage.
 - [x] Hardened `ArrangerRealtimePreview` to start Tone.js transport at the requested timeline offset, schedule active clips from the correct buffer offset after seeking, stop predictably at the arrangement/effect-tail end, and dispose preview players/effects/nodes on project changes.
 - [x] Arranger preview now reports playable clip count, skipped missing/unreadable/empty clips, no-playable-stem errors, and an acid playhead aligned to the timeline grid.
 - [x] Added mocked realtime preview tests covering missing-clip reporting, seek-offset scheduling, and no-playable transport guards.
 - [x] Verified with focused desktop tests, full desktop Vitest, TypeScript/Vite production build, and `git diff --check`.
 
-## Session Studio Reframe — Completed 2026-08-28
+## Session Studio Prototype — Completed 2026-08-28, Retired As Active Shell
 
 - [x] Imported the archived POC from `../games/music` without generated dependency/build artifacts.
 - [x] Added the new workspace/session/artifact schema and Tauri storage helpers while preserving atomic JSON writes, command journals, relative asset paths, and scan/load/save patterns.
-- [x] Replaced the active app flow with a working-directory setup gate, strict local model preflight, collapsible session sidebar, three new-session choices, prompt archival, generation controls, artifact preview/actions, export/reveal, separation, merge, conversion, and derived-session actions.
+- [x] Built a working-directory setup gate, strict local model preflight, collapsible session sidebar, three new-session choices, prompt archival, generation controls, artifact preview/actions, export/reveal, separation, merge, conversion, and derived-session actions. The DAW project workflow was later restored as the active shell to match repository intent.
 - [x] Added worker preflight for required `facebook/musicgen-medium` and `facebook/musicgen-melody` cache availability.
 - [x] Added worker endpoints for AMAAI-Lab/Text2midi orchestration, MIDI-to-clean-guide-WAV rendering, melodic audio-to-MIDI conversion through basic-pitch, and drum audio-to-MIDI conversion through omnizart.
 - [x] Verified WaveRoll as an installable npm package and integrated `wave-roll@0.4.0` for MIDI visualization.

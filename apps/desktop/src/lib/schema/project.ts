@@ -231,6 +231,7 @@ export const genostProjectSchema = z.object({
     defaultTextModel: z.string().min(1),
     defaultMelodyModel: z.string().min(1),
     modelCachePath: z.string().default(""),
+    generationBackend: z.enum(["auto", "mlx", "audiocraft"]).default("auto"),
   }),
   blocks: z.array(blockSchema).default([]),
   arrangement: z.object({

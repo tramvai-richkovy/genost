@@ -198,37 +198,37 @@ def clear_model_cache() -> None:
 
 def analyze_audio_file(path: str | Path) -> AudioMetrics:
     try:
-        import torch
-        import torchaudio
+        import numpy as np
+        import soundfile as sf
     except Exception as exc:  # pragma: no cover - depends on local audio setup
         raise GeneratorError(f"Audio validation dependencies are not available: {exc}") from exc
 
     audio_path = Path(path)
     try:
-        waveform, sample_rate = torchaudio.load(str(audio_path))
+        frames, sample_rate = sf.read(str(audio_path), always_2d=True, dtype="float32")
     except Exception as exc:
         raise GeneratorError(f"Failed to read generated audio {audio_path}: {exc}") from exc
 
-    if waveform.ndim != 2 or waveform.shape[0] < 1 or waveform.shape[1] < 1:
-        raise GeneratorError(f"Generated audio has an invalid shape: {tuple(waveform.shape)}")
-    if not bool(torch.isfinite(waveform).all()):
+    if frames.ndim != 2 or frames.shape[0] < 1 or frames.shape[1] < 1:
+        raise GeneratorError(f"Generated audio has an invalid shape: {tuple(frames.shape)}")
+    if not bool(np.isfinite(frames).all()):
         raise GeneratorError("Generated audio contains non-finite samples.")
 
-    mono = waveform.float().mean(dim=0)
-    duration_seconds = mono.numel() / sample_rate
-    peak = float(mono.abs().max())
-    rms = float(torch.sqrt(torch.mean(mono.square())))
+    mono = frames.astype(np.float64, copy=False).mean(axis=1)
+    duration_seconds = mono.size / sample_rate
+    peak = float(np.abs(mono).max())
+    rms = float(np.sqrt(np.mean(np.square(mono))))
     rms_db = 20 * math.log10(max(rms, 1e-12))
-    dc_offset = float(mono.mean())
+    dc_offset = float(np.mean(mono))
 
-    frame_length = min(sample_rate, mono.numel())
-    frame_count = max(1, mono.numel() // frame_length)
+    frame_length = min(sample_rate, mono.size)
+    frame_count = max(1, mono.size // frame_length)
     framed = mono[: frame_count * frame_length].reshape(frame_count, frame_length)
-    framed = framed - framed.mean(dim=1, keepdim=True)
-    window = torch.hann_window(frame_length, dtype=framed.dtype, device=framed.device)
-    power = torch.fft.rfft(framed * window, dim=1).abs().square().mean(dim=0)
-    frequencies = torch.fft.rfftfreq(frame_length, d=1 / sample_rate)
-    total_power = float(power.sum())
+    framed = framed - framed.mean(axis=1, keepdims=True)
+    window = np.hanning(frame_length)
+    power = np.mean(np.abs(np.fft.rfft(framed * window, axis=1)) ** 2, axis=0)
+    frequencies = np.fft.rfftfreq(frame_length, d=1 / sample_rate)
+    total_power = float(np.sum(power))
     if total_power <= 1e-12:
         energy_below_500_hz = 0.0
         energy_above_2000_hz = 0.0
@@ -236,23 +236,21 @@ def analyze_audio_file(path: str | Path) -> AudioMetrics:
         spectral_centroid_hz = 0.0
         spectral_flatness = 0.0
     else:
-        energy_below_500_hz = float(power[frequencies < 500].sum()) / total_power
-        energy_above_2000_hz = float(power[frequencies >= 2000].sum()) / total_power
-        cumulative = torch.cumsum(power, dim=0)
-        rolloff_index = int(torch.searchsorted(cumulative, cumulative[-1] * 0.85).item())
-        rolloff_85_hz = float(frequencies[min(rolloff_index, frequencies.numel() - 1)])
-        spectral_centroid_hz = float((frequencies * power).sum() / power.sum())
-        spectral_flatness = float(
-            torch.exp(torch.mean(torch.log(power.clamp_min(1e-12)))) / power.mean().clamp_min(1e-12)
-        )
+        energy_below_500_hz = float(np.sum(power[frequencies < 500])) / total_power
+        energy_above_2000_hz = float(np.sum(power[frequencies >= 2000])) / total_power
+        cumulative = np.cumsum(power)
+        rolloff_index = int(np.searchsorted(cumulative, cumulative[-1] * 0.85))
+        rolloff_85_hz = float(frequencies[min(rolloff_index, frequencies.size - 1)])
+        spectral_centroid_hz = float(np.sum(frequencies * power) / np.sum(power))
+        spectral_flatness = float(np.exp(np.mean(np.log(np.maximum(power, 1e-12)))) / max(float(np.mean(power)), 1e-12))
 
-    zero_crossings = torch.count_nonzero(torch.diff(torch.signbit(mono))).item()
+    zero_crossings = int(np.count_nonzero(np.diff(np.signbit(mono))))
     zero_crossings_per_second = float(zero_crossings / max(duration_seconds, 1e-12))
 
     return AudioMetrics(
         duration_seconds=duration_seconds,
         sample_rate=sample_rate,
-        channels=int(waveform.shape[0]),
+        channels=int(frames.shape[1]),
         peak=peak,
         rms_db=rms_db,
         dc_offset=dc_offset,
@@ -312,29 +310,43 @@ def save_audio(
     content_category: AudioContentCategory = "generic",
 ) -> str:
     try:
-        import torchaudio
+        import numpy as np
+        import soundfile as sf
     except Exception as exc:  # pragma: no cover - depends on local audio setup
-        raise GeneratorError(f"torchaudio is not available: {exc}") from exc
+        raise GeneratorError(f"Audio publication dependencies are not available: {exc}") from exc
 
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     if output_file.exists():
         raise GeneratorError(f"Refusing to overwrite an existing generated stem: {output_file}")
 
-    if getattr(audio_tensor, "dim")() == 3:
-        audio_tensor = audio_tensor.squeeze(0)
+    value = audio_tensor
+    if hasattr(value, "detach"):
+        value = value.detach()
+    if hasattr(value, "cpu"):
+        value = value.cpu()
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    samples = np.asarray(value, dtype=np.float32)
+    if samples.ndim == 3 and samples.shape[0] == 1:
+        samples = samples[0]
+    if samples.ndim == 1:
+        samples = samples[np.newaxis, :]
+    if samples.ndim != 2 or samples.shape[0] < 1 or samples.shape[1] < 1:
+        raise GeneratorError(f"Generated audio has an invalid shape: {tuple(samples.shape)}")
+    if not bool(np.isfinite(samples).all()):
+        raise GeneratorError("Generated audio contains non-finite samples.")
 
-    audio_tensor = audio_tensor.float()
-    peak = float(audio_tensor.abs().max())
+    peak = float(np.max(np.abs(samples)))
     if peak > 0.98:
-        audio_tensor = audio_tensor * (0.98 / peak)
+        samples = samples * (0.98 / peak)
 
     temporary = output_file.with_name(f".{output_file.stem}.{uuid4().hex}.tmp{output_file.suffix}")
     try:
-        torchaudio.save(str(temporary), audio_tensor.cpu(), sample_rate)
+        sf.write(str(temporary), samples.T, sample_rate, subtype="PCM_24")
         duration = expected_duration_seconds
         if duration is None:
-            duration = float(audio_tensor.shape[-1]) / sample_rate
+            duration = float(samples.shape[-1]) / sample_rate
         validate_generated_audio(temporary, duration, validation_profile, content_category)
         temporary.replace(output_file)
     except Exception:
@@ -363,7 +375,6 @@ def generate_text_stem(
         try:
             import mlx.core as mx
             import numpy as np
-            import torch
         except Exception as exc:  # pragma: no cover - depends on Apple Silicon setup
             raise GeneratorError(f"MLX generation dependencies are unavailable: {exc}") from exc
 
@@ -376,9 +387,8 @@ def generate_text_stem(
             wav = model.generate([prompt], progress=True)
         finally:
             model.set_custom_progress_callback(None)
-        tensor = torch.from_numpy(np.array(wav[0], copy=True))
         return save_audio(
-            tensor,
+            np.array(wav[0], copy=True),
             output_path,
             model.sample_rate,
             expected_duration_seconds=duration_seconds,
@@ -433,7 +443,6 @@ def generate_conditioned_stem(
             import mlx.core as mx
             import numpy as np
             import soundfile as sf
-            import torch
         except Exception as exc:  # pragma: no cover - depends on Apple Silicon setup
             raise GeneratorError(f"MLX generation dependencies are unavailable: {exc}") from exc
 
@@ -453,9 +462,8 @@ def generate_conditioned_stem(
             )
         finally:
             model.set_custom_progress_callback(None)
-        tensor = torch.from_numpy(np.array(wav[0], copy=True))
         return save_audio(
-            tensor,
+            np.array(wav[0], copy=True),
             output_path,
             model.sample_rate,
             expected_duration_seconds=duration_seconds,
@@ -523,7 +531,6 @@ def generate_continuation(
             import mlx.core as mx
             import numpy as np
             import soundfile as sf
-            import torch
         except Exception as exc:  # pragma: no cover - depends on Apple Silicon setup
             raise GeneratorError(f"MLX generation dependencies are unavailable: {exc}") from exc
 
@@ -546,9 +553,8 @@ def generate_continuation(
             )
         finally:
             model.set_custom_progress_callback(None)
-        tensor = torch.from_numpy(np.array(wav[0], copy=True))
         return save_audio(
-            tensor,
+            np.array(wav[0], copy=True),
             output_path,
             model.sample_rate,
             expected_duration_seconds=duration_seconds,

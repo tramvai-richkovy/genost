@@ -37,6 +37,10 @@ function blockText(block: GenostBlock): string {
 }
 
 export function audioContentCategoryForBlock(block: GenostBlock): AudioContentCategory {
+  if (block.validationCategory !== "generic") {
+    return block.validationCategory;
+  }
+
   const text = blockText(block);
   if (/\b(bass|sub|reese|drone|low end)\b/.test(text)) {
     return "bass_drone";
@@ -386,7 +390,7 @@ export function RenderQueueProcessor() {
             reference_audio_path: inputPath,
             seed: stem.seed,
             model_cache_path: projectSnapshot.song.modelCachePath || null,
-            backend: "auto",
+            backend: projectSnapshot.song.generationBackend,
             audio_validation_profile: "music",
             audio_content_category: category,
           },

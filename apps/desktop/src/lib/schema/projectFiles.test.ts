@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { commandJournalSchema, genostProjectSchema } from "./project";
 
 const repositoryRoot = resolve(process.cwd(), "../..");
-const smtvRoot = resolve(repositoryRoot, "../ost_drafts");
+const smtvRoot = resolve(repositoryRoot, "../games/ost_drafts");
 const smtvFolders = [
   "smtv Sketch 01",
   "smtv Sketch 02 - Salt Glass Shinagawa",
@@ -26,7 +26,11 @@ describe.runIf(existsSync(smtvRoot))("migrated SMTV project files", () => {
 
       expect(project.blocks.length).toBeGreaterThan(0);
       expect(project.blocks.every((block) => Boolean(block.separatorTarget))).toBe(true);
+      expect(project.blocks.every((block) => ["bass_drone", "rhythm", "melody"].includes(block.validationCategory))).toBe(true);
       expect(journal.commands.some((command) => command.type === "set_block_separator_targets")).toBe(true);
+      const preflight = journal.commands.filter((command) => command.type === "preflight_smtv_prompts").at(-1);
+      expect(preflight?.actor).toBe("code-agent");
+      expect(preflight?.source).toBe("code-agent");
     });
   }
 });

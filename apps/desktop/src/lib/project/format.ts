@@ -301,19 +301,28 @@ function instrumentFocusInstruction(block: GenostBlock): string {
   }
 
   const text = blockPromptText(block);
+  const target = block.separatorTarget;
   const excluded = new Set<string>();
   const addExcluded = (items: string[]) => items.forEach((item) => excluded.add(item));
 
-  if (/\b(bass|sub|reese|low end)\b/.test(text)) {
+  if (target === "bass") {
+    addExcluded(["kick drums", "snare", "hi-hats", "percussion loops", "synth pads", "lead melodies"]);
+  } else if (target === "drums") {
+    addExcluded(["basslines", "sub bass", "synth pads", "chord progressions", "lead melodies", "choirs"]);
+  } else if (target === "vocals") {
+    addExcluded(["lyrics", "kick drums", "snare", "basslines", "lead synths"]);
+  } else if (target === "guitar" || target === "piano") {
+    addExcluded(["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]);
+  } else if (/\b(bass|sub|reese|low end)\b/.test(text)) {
     addExcluded(["kick drums", "snare", "hi-hats", "percussion loops", "synth pads", "lead melodies"]);
   } else if (/\b(drum|drums|kick|snare|hat|hats|break|percussion|perc|tom|toms)\b/.test(text)) {
     addExcluded(["basslines", "sub bass", "synth pads", "chord progressions", "lead melodies", "choirs"]);
+  } else if (/\b(choir|voice|vocal|vocals)\b/.test(text)) {
+    addExcluded(["lyrics", "kick drums", "snare", "basslines", "lead synths"]);
+  } else if (/\b(lead|melody|melodic|hook|arp|arpeggio|bell|pluck|guitar|piano)\b/.test(text)) {
+    addExcluded(["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]);
   } else if (/\b(pad|chord|chords|harmony|harmonic|atmosphere|atmospheric|drone)\b/.test(text)) {
     addExcluded(["kick drums", "snare", "hi-hats", "percussion loops", "basslines", "lead riffs"]);
-  } else if (/\b(lead|melody|melodic|hook|arp|arpeggio|bell|pluck|guitar)\b/.test(text)) {
-    addExcluded(["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]);
-  } else if (/\b(choir|voice|vocal)\b/.test(text)) {
-    addExcluded(["lyrics", "kick drums", "snare", "basslines", "lead synths"]);
   } else {
     addExcluded(["full drum kit", "basslines", "lead melodies", "extra instruments"]);
   }
@@ -416,6 +425,7 @@ export function createEmptyProject(title: string): GenostProject {
     defaultTextModel: "facebook/musicgen-medium",
     defaultMelodyModel: "facebook/musicgen-melody",
     modelCachePath: "",
+    generationBackend: "auto",
   });
 
   return {

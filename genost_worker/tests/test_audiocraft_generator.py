@@ -7,8 +7,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import torch
-import torchaudio
+import numpy as np
+import soundfile as sf
+
+try:
+    import torch
+except ImportError:  # Optional AudioCraft CPU diagnostic dependency.
+    torch = None
 
 from genost_worker.audiocraft_generator import (
     AudioMetrics,
@@ -23,15 +28,18 @@ from genost_worker.audiocraft_generator import (
 
 
 class DeviceSelectionTests(unittest.TestCase):
+    @unittest.skipUnless(torch is not None, "PyTorch is only required by the optional AudioCraft diagnostic backend")
     def test_auto_uses_cpu_when_cuda_is_unavailable(self) -> None:
         with patch.dict(os.environ, {}, clear=False), patch("torch.cuda.is_available", return_value=False):
             os.environ.pop("GENOST_AUDIOCRAFT_DEVICE", None)
             self.assertEqual(get_device(), "cpu")
 
+    @unittest.skipUnless(torch is not None, "PyTorch is only required by the optional AudioCraft diagnostic backend")
     def test_explicit_mps_is_rejected(self) -> None:
         with self.assertRaisesRegex(GeneratorError, "silently produce invalid audio"):
             get_device("mps")
 
+    @unittest.skipUnless(torch is not None, "PyTorch is only required by the optional AudioCraft diagnostic backend")
     def test_unavailable_cuda_is_rejected(self) -> None:
         with patch("torch.cuda.is_available", return_value=False):
             with self.assertRaisesRegex(GeneratorError, "unavailable"):
@@ -136,9 +144,9 @@ class AudioValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "rumble.wav"
             sample_rate = 32000
-            samples = torch.arange(sample_rate * 2, dtype=torch.float32) / sample_rate
-            rumble = 0.2 * torch.sin(2 * math.pi * 60 * samples)
-            torchaudio.save(str(path), rumble.unsqueeze(0), sample_rate)
+            samples = np.arange(sample_rate * 2, dtype=np.float32) / sample_rate
+            rumble = 0.2 * np.sin(2 * math.pi * 60 * samples)
+            sf.write(path, rumble, sample_rate)
 
             with self.assertRaisesRegex(GeneratorError, "insufficient energy above 2 kHz"):
                 validate_generated_audio(path, 2, "full_mix")
@@ -147,9 +155,8 @@ class AudioValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "broadband.wav"
             sample_rate = 32000
-            torch.manual_seed(7)
-            audio = torch.randn(sample_rate * 2) * 0.08
-            torchaudio.save(str(path), audio.unsqueeze(0), sample_rate)
+            audio = np.random.default_rng(7).normal(0, 0.08, sample_rate * 2).astype(np.float32)
+            sf.write(path, audio, sample_rate)
 
             metrics = validate_generated_audio(path, 2, "music")
 
@@ -160,10 +167,10 @@ class AudioValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "generated.wav"
             sample_rate = 32000
-            samples = torch.arange(sample_rate, dtype=torch.float32) / sample_rate
-            audio = 0.2 * torch.sin(2 * math.pi * 440 * samples)
+            samples = np.arange(sample_rate, dtype=np.float32) / sample_rate
+            audio = 0.2 * np.sin(2 * math.pi * 440 * samples)
 
-            result = save_audio(audio.unsqueeze(0), str(path), sample_rate, expected_duration_seconds=1)
+            result = save_audio(audio[np.newaxis, :], str(path), sample_rate, expected_duration_seconds=1)
 
             self.assertEqual(result, str(path))
             self.assertTrue(path.exists())
@@ -176,7 +183,7 @@ class AudioValidationTests(unittest.TestCase):
             path.write_bytes(b"existing")
 
             with self.assertRaisesRegex(GeneratorError, "Refusing to overwrite"):
-                save_audio(torch.zeros((1, 32000)), str(path), 32000)
+                save_audio(np.zeros((1, 32000), dtype=np.float32), str(path), 32000)
 
             self.assertEqual(path.read_bytes(), b"existing")
 
@@ -184,10 +191,10 @@ class AudioValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "normalized.wav"
             sample_rate = 32000
-            samples = torch.arange(sample_rate, dtype=torch.float32) / sample_rate
-            audio = 3.0 * torch.sin(2 * math.pi * 440 * samples)
+            samples = np.arange(sample_rate, dtype=np.float32) / sample_rate
+            audio = 3.0 * np.sin(2 * math.pi * 440 * samples)
 
-            save_audio(audio.unsqueeze(0), str(path), sample_rate, expected_duration_seconds=1)
+            save_audio(audio[np.newaxis, :], str(path), sample_rate, expected_duration_seconds=1)
 
             self.assertLessEqual(analyze_audio_file(path).peak, 0.981)
 

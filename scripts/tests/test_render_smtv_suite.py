@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
+
+from genost_worker.audiocraft_generator import AudioMetrics, GenerationResult, generate_fixture_tone
 
 from scripts.render_smtv_suite import (
     PROJECT_FOLDERS,
@@ -206,12 +209,32 @@ class VariationAnchorTests(unittest.TestCase):
         self.assertLess(prompt.index("block: Pad"), prompt.index("project context"))
         self.assertIn("project direction: cold nocturnal techno", prompt)
 
+    def test_isolation_matching_does_not_treat_that_as_a_hi_hat(self) -> None:
+        project = fixture_project()
+        block = {
+            **project["blocks"][0],
+            "name": "Horn",
+            "role": "lead",
+            "separatorTarget": "other",
+            "instruments": ["detuned horn synth"],
+            "melodyDescription": "long tones that answer empty bars",
+            "melodyPrompt": "bent warning notes",
+            "rhythmFeel": "slow sustained entries",
+            "timbre": "unstable pitch",
+        }
+
+        prompt = compose_stem_prompt(project, block, 1, 4, 8.0)
+
+        self.assertIn("avoid kick drums, snare, hi-hats, full drum kit, basslines, pad washes", prompt)
+        self.assertNotIn("avoid basslines, sub bass, synth pads, chord progressions, lead melodies", prompt)
+
     def test_retry_report_retains_all_three_generation_failures(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             project_dir = Path(directory)
             project = fixture_project()
             project.update({"id": "project_fixture", "title": "Fixture", "updatedAt": "2026-01-01T00:00:00Z"})
             project["song"].update({"defaultTextModel": "fixture", "modelCachePath": "", "sampleRate": 32000})
+            project["song"]["defaultMelodyModel"] = "fixture-melody"
             project["blocks"][0].update({
                 "importedStemId": None,
                 "volumeDb": -6,
@@ -234,6 +257,68 @@ class VariationAnchorTests(unittest.TestCase):
             self.assertEqual(len(payload["failures"]), 3)
             self.assertEqual([failure["attempt"] for failure in payload["failures"]], [1, 2, 3])
 
+    def test_render_project_processes_ready_dependencies_in_sequence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project_dir = Path(directory)
+            (project_dir / "genost.json").write_text(json.dumps({"title": "Fixture"}), encoding="utf-8")
+            first = {"key": "v1", "existingStem": None, "inputMissing": False, "block": {"name": "Pad"}, "variation": 1}
+            waiting = {"key": "v2", "existingStem": None, "inputMissing": True, "waitingFor": "Pad v1", "inputBlockId": None, "block": {"name": "Pad"}, "variation": 2}
+            second = {**waiting, "inputMissing": False}
+            complete_first = {**first, "existingStem": {"id": "stem_v1"}}
+            complete_second = {**second, "existingStem": {"id": "stem_v2"}}
+
+            with (
+                patch("scripts.render_smtv_suite.recover_interrupted_renders"),
+                patch("scripts.render_smtv_suite.sync_existing_stems"),
+                patch(
+                    "scripts.render_smtv_suite.collect_requirements",
+                    side_effect=[[first, waiting], [complete_first, second], [complete_first, complete_second]],
+                ),
+                patch("scripts.render_smtv_suite.render_requirement") as render_requirement_mock,
+            ):
+                __import__("scripts.render_smtv_suite", fromlist=["render_project"]).render_project(project_dir, "mlx")
+
+            self.assertEqual(
+                render_requirement_mock.call_args_list,
+                [call(project_dir, first, "mlx"), call(project_dir, second, "mlx")],
+            )
+
+    def test_conditioned_requirement_uses_melody_model(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project_dir = Path(directory)
+            project = fixture_project()
+            project.update({"id": "project_fixture", "title": "Fixture", "updatedAt": "2026-01-01T00:00:00Z"})
+            project["song"].update({
+                "defaultTextModel": "fixture-text",
+                "defaultMelodyModel": "fixture-melody",
+                "modelCachePath": "",
+                "sampleRate": 32000,
+            })
+            project["blocks"][0].update({"importedStemId": None, "volumeDb": -6, "delaySend": 0, "reverbSend": 0, "compressorEnabled": False})
+            anchor_path = project_dir / "STEMS" / "anchor.wav"
+            anchor_path.parent.mkdir()
+            anchor_path.write_bytes(b"anchor")
+            project["stems"] = [{
+                "id": "stem_anchor", "blockId": "block_pad", "variation": 1, "inputStemId": None,
+                "status": "ready", "filePath": "STEMS/anchor.wav", "durationSeconds": 8.0,
+                "updatedAt": "2026-01-01T00:00:00Z",
+            }]
+            (project_dir / "genost.json").write_text(json.dumps(project), encoding="utf-8")
+            (project_dir / "commands.json").write_text(json.dumps({"commands": [], "updatedAt": "x"}), encoding="utf-8")
+            requirement = next(item for item in collect_requirements(project, project_dir) if item["variation"] == 2)
+            metrics = AudioMetrics(8.0, 32000, 1, 0.5, -12, 0, 0.5, 0.2, 4000, 1200, 0.1, 2000)
+
+            def fake_generate(**kwargs: object) -> GenerationResult:
+                generate_fixture_tone(str(kwargs["output_path"]), 1)
+                return GenerationResult(str(kwargs["output_path"]), "mlx", "metal", str(kwargs["model_name"]), 0.1, metrics)
+
+            with patch("scripts.render_smtv_suite.generate_with_metadata", side_effect=fake_generate) as generate_mock:
+                render_requirement(project_dir, requirement, "mlx")
+
+            self.assertEqual(generate_mock.call_args.kwargs["kind"], "conditioned")
+            self.assertEqual(generate_mock.call_args.kwargs["model_name"], "fixture-melody")
+            self.assertEqual(generate_mock.call_args.kwargs["reference_audio_path"], str(anchor_path))
+
 
 class ValidationCategoryTests(unittest.TestCase):
     def test_every_smtv_block_has_exactly_one_reviewed_category(self) -> None:
@@ -251,6 +336,7 @@ class ValidationCategoryTests(unittest.TestCase):
 
     def test_all_reviewed_prompts_are_block_first_and_concise(self) -> None:
         prohibited = ("smt v", "da-at", "minato", "shinagawa", "chiyoda", "ueno", "asakusa", "shinjuku", "kabukicho", "magatsuhi", "qadistu", "tokyo", "trent reznor")
+        visual_noise = ("ruined ruined", "starting wasteland starting region", "expressway", "skyline", "rooftop", "fallen-saint", "deity choir")
         for folder in PROJECT_FOLDERS:
             project = json.loads((PROJECTS_ROOT / folder / "genost.json").read_text(encoding="utf-8"))
             all_prompt_text = project["song"]["prompt"].lower()
@@ -259,6 +345,10 @@ class ValidationCategoryTests(unittest.TestCase):
                 prompt = compose_stem_prompt(project, block, 1, block["bars"], duration)
                 self.assertTrue(prompt.startswith(f"block: {block['name']}"))
                 self.assertLess(len(prompt.split()), 220, f"Prompt is still too long for {project['title']} / {block['name']}")
+                self.assertFalse(any(term in prompt.lower() for term in visual_noise), f"Visual or duplicated prose remains in {project['title']} / {block['name']}")
+                self.assertIsNone(re.search(r"\b([a-z]+)\s+\1\b", prompt, re.IGNORECASE), f"Adjacent duplication remains in {project['title']} / {block['name']}")
+                if block.get("separatorTarget") == "vocals":
+                    self.assertIn("avoid lyrics, kick drums, snare, basslines, lead synths", prompt)
                 all_prompt_text += " " + prompt.lower()
             self.assertFalse(any(term in all_prompt_text for term in prohibited), f"Lore/place text remains in {project['title']}")
 

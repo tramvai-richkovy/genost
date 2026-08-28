@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import genost_worker.api as api
+from fastapi.middleware.cors import CORSMiddleware
 from genost_worker.audiocraft_generator import AudioMetrics, GenerationResult
 from genost_worker.jobs import jobs
 from genost_worker.schemas import GenerationRequest, SeparationMergeRequest, SeparationRequest
@@ -39,6 +40,8 @@ def generation_result(path: Path, *, model: str = "facebook/musicgen-medium") ->
 class WorkerApiTests(unittest.TestCase):
     def setUp(self) -> None:
         jobs.clear()
+        api._module_available.cache_clear()
+        api._module_installed.cache_clear()
 
     def submit(self, request: GenerationRequest):
         with patch.object(api._render_executor, "submit") as submit:
@@ -176,6 +179,25 @@ class WorkerApiTests(unittest.TestCase):
         with self.assertRaises(api.HTTPException) as cancel_error:
             api.cancel_job("missing")
         self.assertEqual(cancel_error.exception.status_code, 404)
+
+    def test_dependency_capability_checks_are_cached(self) -> None:
+        with patch("builtins.__import__", side_effect=ImportError("missing")) as import_module:
+            self.assertFalse(api._module_available("missing_genost_dependency"))
+            self.assertFalse(api._module_available("missing_genost_dependency"))
+        import_module.assert_called_once_with("missing_genost_dependency")
+
+        with patch("genost_worker.api.find_spec", return_value=None) as find_module:
+            self.assertFalse(api._module_installed("missing_genost_package"))
+            self.assertFalse(api._module_installed("missing_genost_package"))
+        find_module.assert_called_once_with("missing_genost_package")
+
+    def test_desktop_origins_can_reach_worker_api(self) -> None:
+        middleware = next(item for item in api.app.user_middleware if item.cls is CORSMiddleware)
+
+        self.assertIn("http://localhost:1420", middleware.kwargs["allow_origins"])
+        self.assertIn("http://tauri.localhost", middleware.kwargs["allow_origins"])
+        self.assertIn("POST", middleware.kwargs["allow_methods"])
+        self.assertIn("Content-Type", middleware.kwargs["allow_headers"])
 
     def test_separation_and_merge_return_structured_results(self) -> None:
         separation_request = SeparationRequest(bundle_id="bundle", source_stem_path="/tmp/raw.wav", bundle_path="/tmp/bundle")

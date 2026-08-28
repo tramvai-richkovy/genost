@@ -11,6 +11,25 @@ type WaveformPreviewProps = {
 
 const waveformCache = new Map<string, number[]>();
 
+export function summarizeWaveform(buffer: AudioBuffer, buckets = 240): number[] {
+  if (!Number.isInteger(buckets) || buckets < 1) {
+    throw new Error("Waveform bucket count must be a positive integer");
+  }
+
+  return Array.from({ length: buckets }, (_, bucket) => {
+    const start = Math.floor((bucket / buckets) * buffer.length);
+    const end = Math.max(start + 1, Math.floor(((bucket + 1) / buckets) * buffer.length));
+    let peak = 0;
+    for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+      const samples = buffer.getChannelData(channel);
+      for (let index = start; index < Math.min(end, samples.length); index += 1) {
+        peak = Math.max(peak, Math.abs(samples[index]));
+      }
+    }
+    return peak;
+  });
+}
+
 async function readWaveform(path: string, buckets = 240): Promise<number[]> {
   const cached = waveformCache.get(path);
   if (cached) return cached;
@@ -21,16 +40,7 @@ async function readWaveform(path: string, buckets = 240): Promise<number[]> {
   const context = new AudioContext();
   try {
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
-    const values = Array.from({ length: buckets }, (_, bucket) => {
-      const start = Math.floor((bucket / buckets) * buffer.length);
-      const end = Math.max(start + 1, Math.floor(((bucket + 1) / buckets) * buffer.length));
-      let peak = 0;
-      for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
-        const samples = buffer.getChannelData(channel);
-        for (let index = start; index < end; index += 1) peak = Math.max(peak, Math.abs(samples[index]));
-      }
-      return peak;
-    });
+    const values = summarizeWaveform(buffer, buckets);
     waveformCache.set(path, values);
     return values;
   } finally {

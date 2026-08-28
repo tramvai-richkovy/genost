@@ -8,6 +8,7 @@ from pathlib import Path
 from .audiocraft_generator import DEFAULT_MELODY_MODEL, DEFAULT_TEXT_MODEL, configure_model_cache, get_backend, get_device
 
 REQUIRED_MUSICGEN_MODELS = (DEFAULT_TEXT_MODEL, DEFAULT_MELODY_MODEL)
+REQUIRED_MODEL_FILES = ("state_dict.bin", "compression_state_dict.bin")
 
 
 @dataclass(frozen=True)
@@ -58,8 +59,8 @@ def _repo_cache_names(model_name: str) -> tuple[str, str]:
     return (f"models--{namespace}--{repo}", repo)
 
 
-def _snapshot_has_files(snapshot_root: Path) -> bool:
-    return snapshot_root.is_dir() and any(path.is_file() for path in snapshot_root.rglob("*"))
+def _snapshot_has_model_files(snapshot_root: Path) -> bool:
+    return snapshot_root.is_dir() and all((snapshot_root / filename).is_file() for filename in REQUIRED_MODEL_FILES)
 
 
 def _model_present_in_cache(model_name: str, cache_roots: list[Path]) -> tuple[bool, list[str]]:
@@ -75,9 +76,9 @@ def _model_present_in_cache(model_name: str, cache_roots: list[Path]) -> tuple[b
         ]
         for candidate in candidates:
             snapshots = candidate / "snapshots"
-            if snapshots.is_dir() and any(_snapshot_has_files(snapshot) for snapshot in snapshots.iterdir()):
+            if snapshots.is_dir() and any(_snapshot_has_model_files(snapshot) for snapshot in snapshots.iterdir()):
                 hits.append(str(candidate))
-            elif _snapshot_has_files(candidate):
+            elif _snapshot_has_model_files(candidate):
                 hits.append(str(candidate))
 
     if hits:
@@ -89,9 +90,12 @@ def _model_present_in_cache(model_name: str, cache_roots: list[Path]) -> tuple[b
             from huggingface_hub.constants import _CACHED_NO_EXIST
 
             for root in cache_roots:
-                result = try_to_load_from_cache(model_name, "config.json", cache_dir=str(root))
-                if result and result is not _CACHED_NO_EXIST:
-                    return True, [str(Path(result).parents[2])]
+                results = [
+                    try_to_load_from_cache(model_name, filename, cache_dir=str(root))
+                    for filename in REQUIRED_MODEL_FILES
+                ]
+                if all(result and result is not _CACHED_NO_EXIST for result in results):
+                    return True, [str(Path(str(results[0])).parents[2])]
         except Exception:
             pass
 
@@ -131,12 +135,10 @@ def check_model_preflight(
             errors.append(error)
         models[model_name] = ModelAvailability(model_name, available, hits, error, hint)
 
-    dependencies = {
-        "torch": _module_installed("torch"),
-        "torchaudio": _module_installed("torchaudio"),
-        "ffmpeg": _ffmpeg_available(),
-    }
+    dependencies = {"ffmpeg": _ffmpeg_available(), "soundfile": _module_installed("soundfile")}
     if selected_backend == "audiocraft":
+        dependencies["torch"] = _module_installed("torch")
+        dependencies["torchaudio"] = _module_installed("torchaudio")
         dependencies["audiocraft"] = _module_installed("audiocraft")
     if selected_backend == "mlx":
         dependencies["mlx_audiocraft"] = _module_installed("mlx_audiocraft")

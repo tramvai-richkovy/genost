@@ -1,4 +1,4 @@
-import { Cpu, FolderOpen, Plus, RefreshCcw, SquareChevronRight, Unplug } from "lucide-react";
+import { AlertTriangle, Cpu, FileWarning, FolderOpen, Plus, RefreshCcw, ShieldAlert, SquareChevronRight, Unplug } from "lucide-react";
 import { type FormEvent, type MouseEvent, useMemo, useState } from "react";
 import { useStudioStore } from "../../app/store";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -6,6 +6,7 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 export function ProjectBrowser() {
   const projectsRoot = useStudioStore((state) => state.projectsRoot);
   const projects = useStudioStore((state) => state.projects);
+  const projectScanIssues = useStudioStore((state) => state.projectScanIssues);
   const musicAiMode = useStudioStore((state) => state.musicAiMode);
   const status = useStudioStore((state) => state.status);
   const error = useStudioStore((state) => state.error);
@@ -17,6 +18,7 @@ export function ProjectBrowser() {
   const [title, setTitle] = useState("GENOST Sketch");
 
   const rootLabel = useMemo(() => projectsRoot ?? "No projects folder selected", [projectsRoot]);
+  const permissionError = Boolean(error && /filesystem permission|not allowed|permission denied|operation not permitted/i.test(error));
 
   function submitCreateProject(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -68,7 +70,36 @@ export function ProjectBrowser() {
           {status ? <span className="status-pill">{status}</span> : null}
         </div>
 
-        {error ? <div className="mt-4 rounded border border-genost-danger/60 bg-genost-danger/10 px-3 py-2 text-sm text-genost-danger">{error}</div> : null}
+        {error ? (
+          <div className="browser-problem mt-4" role="alert">
+            {permissionError ? <ShieldAlert size={19} /> : <AlertTriangle size={19} />}
+            <div className="min-w-0 flex-1">
+              <strong>{permissionError ? "Folder permission required" : "Projects folder unreadable"}</strong>
+              <span>{error}</span>
+            </div>
+            <button className="control-button" onClick={() => void selectRoot()} type="button">
+              <FolderOpen size={16} />
+              Select Again
+            </button>
+            <button className="icon-button" onClick={() => void refreshProjects()} title="Retry reading projects" type="button">
+              <RefreshCcw size={16} />
+            </button>
+          </div>
+        ) : null}
+
+        {projectScanIssues.length > 0 ? (
+          <div className="browser-problem warning mt-4" role="status">
+            <FileWarning size={19} />
+            <div className="min-w-0 flex-1">
+              <strong>
+                Skipped {projectScanIssues.length} invalid or unreadable project{projectScanIssues.length === 1 ? "" : "s"}
+              </strong>
+              <span title={projectScanIssues.map((issue) => `${issue.name}: ${issue.message}`).join("\n")}>
+                {projectScanIssues.map((issue) => issue.name).join(", ")}
+              </span>
+            </div>
+          </div>
+        ) : null}
 
         {!projectsRoot ? (
           <div className="empty-state mt-7">
@@ -83,7 +114,7 @@ export function ProjectBrowser() {
         ) : null}
 
         <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-          <form
+          {projectsRoot && !error ? <form
             aria-label="Create new project"
             className="project-card border-genost-acid/70"
             onClick={handleCreateTileClick}
@@ -105,7 +136,7 @@ export function ProjectBrowser() {
                 Create
               </button>
             </div>
-          </form>
+          </form> : null}
 
           {projects.map((project) => (
             <button className="project-card text-left" key={project.path} onClick={() => openProject(project.path)} type="button">

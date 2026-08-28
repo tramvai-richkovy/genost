@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import platform
 import shutil
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
+from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .audiocraft_generator import (
     GeneratorError,
@@ -40,6 +43,18 @@ from .schemas import (
 from .separation import SeparationError, merge_separated_outputs, separate_stem
 
 app = FastAPI(title="GENOST Worker", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:1420",
+        "http://127.0.0.1:1420",
+        "http://tauri.localhost",
+        "https://tauri.localhost",
+        "tauri://localhost",
+    ],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 _render_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="genost-render")
 
 
@@ -77,15 +92,18 @@ def _midi_error_code(exc: Exception) -> str:
     return "midi_workflow_failed"
 
 
+@lru_cache(maxsize=None)
 def _module_available(module_name: str) -> bool:
     try:
         __import__(module_name)
-    except Exception:
+    except Exception as exc:
+        print(f"GENOST dependency import failed for {module_name}: {exc}", file=sys.stderr, flush=True)
         return False
 
     return True
 
 
+@lru_cache(maxsize=None)
 def _module_installed(module_name: str) -> bool:
     try:
         return find_spec(module_name) is not None

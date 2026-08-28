@@ -63,4 +63,26 @@ describe("CompositionTab", () => {
 
     expect(genreReferencesField.value).toBe("breakcore, jungle");
   });
+
+  it("marks invalid key and cache-path fields and reports both compactly", () => {
+    renderCompositionWithEmptyGenres();
+    const activeProject = useStudioStore.getState().activeProject;
+    if (!activeProject) throw new Error("Expected fixture project");
+    useStudioStore.setState({
+      activeProject: {
+        ...activeProject,
+        project: {
+          ...activeProject.project,
+          song: { ...activeProject.project.song, key: "Tokyo minor", modelCachePath: "relative/models" },
+        },
+      },
+    });
+    cleanup();
+    render(<CompositionTab />);
+
+    expect(screen.getByLabelText("Key").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Model Cache Path").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByRole("status").textContent).toContain("Key must look like D minor or A Phrygian");
+    expect(screen.getByRole("status").textContent).toContain("Model cache path must be absolute");
+  });
 });

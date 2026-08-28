@@ -33,6 +33,7 @@ import {
   writeStemSidecar,
   type LoadedProject,
   type ProjectCard,
+  type ProjectScanIssue,
 } from "../lib/project/storage";
 
 export type StudioTab = "composition" | "blocks" | "arranger" | "graph" | "premix" | "components" | "player";
@@ -45,6 +46,7 @@ type StudioState = {
   musicAiMode: MusicAiMode | null;
   projectsRoot: string | null;
   projects: ProjectCard[];
+  projectScanIssues: ProjectScanIssue[];
   workspaceGenreReferences: string[];
   activeProject: LoadedProject | null;
   activeTab: StudioTab;
@@ -126,6 +128,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   musicAiMode: null,
   projectsRoot: null,
   projects: [],
+  projectScanIssues: [],
   workspaceGenreReferences: [],
   activeProject: null,
   activeTab: "composition",
@@ -183,6 +186,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       const workspaceMetadata = await loadWorkspaceMetadata(selectedRoot);
       set({
         projectsRoot: selectedRoot,
+        projects: [],
+        projectScanIssues: [],
         workspaceGenreReferences: workspaceMetadata.genreReferences,
         activeProject: null,
         status: "Projects folder selected",
@@ -203,10 +208,21 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     }
 
     try {
-      const projects = await scanProjectsRoot(root);
-      set({ projects, status: `Found ${projects.length} GENOST project(s)`, error: null });
+      const result = await scanProjectsRoot(root);
+      const issueStatus = result.issues.length > 0 ? ` · skipped ${result.issues.length}` : "";
+      set({
+        projects: result.projects,
+        projectScanIssues: result.issues,
+        status: `Found ${result.projects.length} GENOST project(s)${issueStatus}`,
+        error: null,
+      });
     } catch (error) {
-      set({ error: describeProjectStorageError(error, "Refreshing projects", root) });
+      set({
+        projects: [],
+        projectScanIssues: [],
+        status: null,
+        error: describeProjectStorageError(error, "Refreshing projects", root),
+      });
     }
   },
 
@@ -222,14 +238,29 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       set({ status: "Creating project", error: null });
       let activeProject = await createProjectOnDisk(root, title);
       const defaultCachePath = typeof window === "undefined" ? "" : window.localStorage.getItem("genost-default-model-cache")?.trim() ?? "";
-      if (defaultCachePath) {
+      const defaultBackend = typeof window === "undefined"
+        ? "auto"
+        : window.localStorage.getItem("genost-default-backend") === "mlx"
+          ? "mlx"
+          : window.localStorage.getItem("genost-default-backend") === "audiocraft"
+            ? "audiocraft"
+            : "auto";
+      if (defaultCachePath || defaultBackend !== "auto") {
         const beforeHash = hashProject(activeProject.project);
         const project = projectWithUpdatedAt({
           ...activeProject.project,
-          song: withGeneratedCompositionPrompt({ ...activeProject.project.song, modelCachePath: defaultCachePath }),
+          song: withGeneratedCompositionPrompt({
+            ...activeProject.project.song,
+            modelCachePath: defaultCachePath,
+            generationBackend: defaultBackend,
+          }),
         });
         const command = createCommandEntry(
-          { type: "set_model_cache_path", summary: "Applied default model cache path", payload: { modelCachePath: defaultCachePath } },
+          {
+            type: "apply_generation_defaults",
+            summary: "Applied default generation settings",
+            payload: { modelCachePath: defaultCachePath, generationBackend: defaultBackend },
+          },
           beforeHash,
           hashProject(project),
         );

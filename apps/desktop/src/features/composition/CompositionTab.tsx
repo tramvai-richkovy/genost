@@ -78,6 +78,9 @@ export function CompositionTab() {
   const { project } = activeProject;
   const promptIssues = getCompositionPromptIssues(project.song);
   const fieldIssues = getCompositionFieldIssues(project.song);
+  const bpmInvalid = fieldIssues.some((issue) => issue.startsWith("BPM"));
+  const keyInvalid = fieldIssues.some((issue) => issue.startsWith("Key"));
+  const cachePathInvalid = fieldIssues.some((issue) => issue.startsWith("Model cache path"));
   const availableGenreReferences = workspaceGenreReferences.filter(
     (tag) => !project.song.genreReferences.some((selected) => selected.toLocaleLowerCase() === tag.toLocaleLowerCase()),
   );
@@ -157,6 +160,8 @@ export function CompositionTab() {
           <label className="field-group">
             <span>BPM *</span>
             <input
+              aria-describedby="composition-field-validation"
+              aria-invalid={bpmInvalid}
               className="field"
               type="number"
               min={40}
@@ -198,6 +203,8 @@ export function CompositionTab() {
           <label className="field-group">
             <span>Key</span>
             <input
+              aria-describedby="composition-field-validation"
+              aria-invalid={keyInvalid}
               className="field"
               value={project.song.key}
               onChange={(event) => updateSong("set_key", "Updated key", { key: event.currentTarget.value })}
@@ -350,7 +357,7 @@ export function CompositionTab() {
       </div>
 
       <aside className="grid content-start gap-4">
-        <div className={`status-strip ${fieldIssues.length > 0 ? "warning" : ""}`} role="status">
+        <div className={`status-strip ${fieldIssues.length > 0 ? "warning" : ""}`} id="composition-field-validation" role="status">
           {fieldIssues.length > 0 ? fieldIssues.join(" · ") : "BPM, key, and cache path valid"}
         </div>
         <div className="work-panel grid gap-3">
@@ -410,6 +417,8 @@ export function CompositionTab() {
         <label className="field-group">
           <span>Model Cache Path</span>
           <input
+            aria-describedby="composition-field-validation"
+            aria-invalid={cachePathInvalid}
             className="field"
             placeholder="/Volumes/YourSSDName/models"
             value={project.song.modelCachePath}
@@ -420,6 +429,25 @@ export function CompositionTab() {
         </label>
 
         <div className="grid grid-cols-2 gap-3">
+          <label className="field-group">
+            <span>Generation Backend</span>
+            <select
+              className="field"
+              value={project.song.generationBackend}
+              onChange={(event) =>
+                updateSong(
+                  "set_generation_backend",
+                  "Updated generation backend",
+                  { generationBackend: event.currentTarget.value as GenostProject["song"]["generationBackend"] },
+                  false,
+                )
+              }
+            >
+              <option value="auto">Auto</option>
+              <option value="mlx">MLX / Metal</option>
+              <option value="audiocraft">AudioCraft / CPU diagnostic</option>
+            </select>
+          </label>
           <label className="field-group">
             <span>Text Model</span>
             <input className="field" readOnly value={project.song.defaultTextModel} />

@@ -5,7 +5,7 @@ GENOST is macOS-first for this implementation. The target machine is Apple Silic
 ## System Packages
 
 ```bash
-brew install ffmpeg python@3.9 node@22
+brew install ffmpeg python@3.10 node@22
 xcode-select --install
 rustup update
 ```
@@ -20,14 +20,12 @@ npm install
 npm run tauri:dev
 ```
 
-`wave-roll` is used for MIDI piano-roll visualization. It is installed through npm and bundled into the Vite app.
-
 Browser-only development can use `npm run dev`, but native folder selection, reveal, export, and persisted sessions require Tauri.
 
 ## Python Worker
 
 ```bash
-python3.9 -m venv .venv
+python3.10 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -r genost_worker/requirements.txt
@@ -40,6 +38,23 @@ source .venv/bin/activate
 uvicorn genost_worker.api:app --host 127.0.0.1 --port 8765
 curl http://127.0.0.1:8765/health
 ```
+
+The normal environment uses MLX/Metal and does not install the AudioCraft or torchaudio CPU-generation stack. `mlx-audiocraft` currently declares PyTorch for model-weight loading/conversion, but GENOST does not select it as the primary generation backend. The unsupported AudioCraft CPU path is available only for diagnostics:
+
+```bash
+python -m pip install -r genost_worker/requirements-audiocraft-diagnostic.txt
+```
+
+## Local App Bundle
+
+The first local distribution is an unsigned Tauri app with a PyInstaller worker sidecar. Build both together with:
+
+```bash
+cd apps/desktop
+npm run tauri:build
+```
+
+The build script creates the target-triple-suffixed worker expected by Tauri and the app resolves it from the bundle resources at runtime. Development continues to use the repository `.venv` when no packaged worker exists. Signing and notarization are intentionally deferred until the render, separation, and mix workflows are stable.
 
 ## Required MusicGen Models
 
@@ -105,13 +120,19 @@ python -m pip install demucs
 
 ## Separation And Merge
 
-The POC separation and premix workflow is retained. Configure `audio-separator` with:
+The product separation and Premix workflow uses `audio-separator`. Configure it with:
 
 ```bash
 ./scripts/setup-audio-separator.sh
 ```
 
 Set `AUDIO_SEPARATOR_MODEL_DIR` to move separator model weights, or `GENOST_AUDIO_SEPARATOR_BIN` to point at a custom executable.
+
+After setup, an optional short real-model smoke test validates atomic publication and retention of all six outputs:
+
+```bash
+python scripts/smoke-test-separation.py --model-cache-path "$AUDIO_SEPARATOR_MODEL_DIR"
+```
 
 ## Verification
 

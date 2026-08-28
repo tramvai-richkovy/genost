@@ -8,10 +8,20 @@ import time
 import uvicorn
 
 
-def exit_when_parent_changes(expected_parent_pid: int) -> None:
+def parent_process_exists(expected_parent_pid: int) -> bool:
+    try:
+        os.kill(expected_parent_pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def exit_when_parent_exits(expected_parent_pid: int) -> None:
     while True:
         time.sleep(1)
-        if os.getppid() != expected_parent_pid:
+        if not parent_process_exists(expected_parent_pid):
             os._exit(0)
 
 
@@ -21,7 +31,7 @@ def main() -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8765, type=int)
     args = parser.parse_args()
-    monitor = threading.Thread(target=exit_when_parent_changes, args=(args.parent_pid,), daemon=True)
+    monitor = threading.Thread(target=exit_when_parent_exits, args=(args.parent_pid,), daemon=True)
     monitor.start()
     uvicorn.run("genost_worker.api:app", host=args.host, port=args.port)
     return 0

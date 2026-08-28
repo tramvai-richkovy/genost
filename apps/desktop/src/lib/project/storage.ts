@@ -41,6 +41,18 @@ export type ProjectCard = {
   updatedAt: string;
 };
 
+export type ProjectScanIssue = {
+  kind: "invalid" | "unreadable";
+  name: string;
+  path: string;
+  message: string;
+};
+
+export type ProjectScanResult = {
+  projects: ProjectCard[];
+  issues: ProjectScanIssue[];
+};
+
 export type LoadedProject = {
   path: string | null;
   project: GenostProject;
@@ -431,10 +443,11 @@ export async function archiveDetachedStemAssets(
   return archived;
 }
 
-export async function scanProjectsRoot(projectsRoot: string): Promise<ProjectCard[]> {
+export async function scanProjectsRoot(projectsRoot: string): Promise<ProjectScanResult> {
   requireTauri();
   const entries = await readDir(projectsRoot);
   const cards: ProjectCard[] = [];
+  const issues: ProjectScanIssue[] = [];
 
   for (const entry of entries) {
     if (!entry.isDirectory) {
@@ -444,20 +457,32 @@ export async function scanProjectsRoot(projectsRoot: string): Promise<ProjectCar
     const projectPath = await join(projectsRoot, entry.name);
     const projectFilePath = await join(projectPath, PROJECT_FILE_NAME);
 
-    if (!(await exists(projectFilePath))) {
-      continue;
-    }
+    try {
+      if (!(await exists(projectFilePath))) {
+        continue;
+      }
 
-    const project = await readJsonFile(projectFilePath, genostProjectSchema);
-    const info = await stat(projectFilePath);
-    cards.push({
-      title: project.title,
-      path: projectPath,
-      updatedAt: info.mtime?.toISOString() ?? project.updatedAt,
-    });
+      const project = await readJsonFile(projectFilePath, genostProjectSchema);
+      const info = await stat(projectFilePath);
+      cards.push({
+        title: project.title,
+        path: projectPath,
+        updatedAt: info.mtime?.toISOString() ?? project.updatedAt,
+      });
+    } catch (error) {
+      issues.push({
+        kind: isProjectStoragePermissionError(error) ? "unreadable" : "invalid",
+        name: entry.name,
+        path: projectPath,
+        message: errorMessage(error),
+      });
+    }
   }
 
-  return cards.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  return {
+    projects: cards.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+    issues,
+  };
 }
 
 export async function loadProjectAtPath(projectPath: string): Promise<LoadedProject> {

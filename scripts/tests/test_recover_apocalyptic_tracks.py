@@ -66,6 +66,48 @@ class RecoveryScriptTests(unittest.TestCase):
             self.assertTrue(generated["audio"].exists())
             self.assertTrue((root / track.slug / "JOBS" / f"{REVISION}_section_01_attempts.json").exists())
 
+    def test_generation_exhaustion_writes_every_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            track = replace(TRACKS[0], slug="Fixture")
+
+            with (
+                patch("scripts.recover_apocalyptic_tracks.PROJECTS_ROOT", root),
+                patch("scripts.recover_apocalyptic_tracks.load_existing", return_value=None),
+                patch("scripts.recover_apocalyptic_tracks.generate_with_metadata", side_effect=RuntimeError("mock generation failed")),
+                self.assertRaisesRegex(RuntimeError, "No valid candidate"),
+            ):
+                generate_section(track, 0, None)
+
+            report = root / track.slug / "JOBS" / f"{REVISION}_section_01_failures.json"
+            payload = json.loads(report.read_text(encoding="utf-8"))
+            self.assertEqual(len(payload["failures"]), 3)
+            self.assertTrue(all(failure["error"] == "mock generation failed" for failure in payload["failures"]))
+
+    def test_archive_failure_keeps_project_and_journal_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            track = replace(TRACKS[0], slug="Fixture")
+            project_dir = root / track.slug
+            stem = project_dir / "STEMS" / "old.wav"
+            stem.parent.mkdir(parents=True)
+            stem.write_bytes(b"wav")
+            project = {"updatedAt": "x", "stems": [{"id": "old", "status": "ready", "filePath": "STEMS/old.wav"}], "mix": {"lastBuildPath": None}}
+            commands = journal()
+            (project_dir / "genost.json").write_text(json.dumps(project), encoding="utf-8")
+            (project_dir / "commands.json").write_text(json.dumps(commands), encoding="utf-8")
+
+            with (
+                patch("scripts.recover_apocalyptic_tracks.PROJECTS_ROOT", root),
+                patch("scripts.recover_apocalyptic_tracks.archive_stem_pair", side_effect=OSError("archive unavailable")),
+                self.assertRaisesRegex(OSError, "archive unavailable"),
+            ):
+                archive_project(track)
+
+            self.assertTrue(stem.exists())
+            self.assertEqual(json.loads((project_dir / "genost.json").read_text(encoding="utf-8")), project)
+            self.assertEqual(json.loads((project_dir / "commands.json").read_text(encoding="utf-8")), commands)
+
     def test_ffmpeg_mix_failure_removes_partial_wav(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

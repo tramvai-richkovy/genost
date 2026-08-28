@@ -28,4 +28,30 @@ describe("normalizeMixLoudness", () => {
 
     expect(result.peak).toBeCloseTo(10 ** (-1 / 20), 4);
   });
+
+  it("attenuates audio that is louder than the target", () => {
+    const samples = new Float32Array([0.5, -0.5, 0.5, -0.5]);
+    const buffer = {
+      numberOfChannels: 1,
+      getChannelData: () => samples,
+    } as unknown as AudioBuffer;
+
+    const result = normalizeMixLoudness(buffer);
+
+    expect(result.loudnessDb).toBeCloseTo(-14, 1);
+    expect(result.gainDb).toBeLessThan(0);
+  });
+
+  it("leaves silent audio silent", () => {
+    const samples = new Float32Array(16);
+    const buffer = {
+      numberOfChannels: 1,
+      getChannelData: () => samples,
+    } as unknown as AudioBuffer;
+
+    const result = normalizeMixLoudness(buffer);
+
+    expect(result).toEqual({ peak: 0, loudnessDb: -96, gainDb: 0 });
+    expect(samples.every((sample) => sample === 0)).toBe(true);
+  });
 });

@@ -1,166 +1,98 @@
-# GENOST Workspace, Session, And Artifact Format
+# GENOST Portable Project Format
 
-GENOST state is local and portable. The selected working directory contains workspace metadata, a workspace command journal, and one folder per session.
+GENOST projects are local, portable song folders. The desktop validates every persisted file before use and keeps required song state inspectable on disk.
 
 ## Folder Layout
 
 ```text
-WorkingDirectory/
+ProjectsRoot/
 |-- genost-workspace.json
-|-- workspace-commands.json
-|-- se-260828-1/
-|   |-- session.json
-|   |-- commands.json
-|   |-- artifacts/
-|   |   |-- artifact1.wav
-|   |   `-- artifact1.json
-|   |-- archive-1/
-|   `-- archives/
-`-- se-260828-2/
-    |-- session.json
+`-- Song Title/
+    |-- genost.json
     |-- commands.json
-    `-- artifacts/
+    |-- STEMS/
+    |   `-- SEPARATIONS/
+    |-- MIXES/
+    |-- REFERENCES/
+    |-- WAVEFORMS/
+    |-- JOBS/
+    `-- ARCHIVE/
 ```
 
-Do not store required session state in an app-global database. File paths inside `session.json` are stable relative paths unless a user-selected external reference path must remain absolute.
+`genost.json` is the project source of truth. `commands.json` is the append-only journal of meaningful project actions. `genost-workspace.json` stores only projects-root metadata such as shared genre references.
 
-## Workspace Metadata
+## Project State
 
-`genost-workspace.json` stores cross-session metadata:
+The version-1 project object contains:
+
+- identity: `id`, `title`, `createdAt`, and `updatedAt`;
+- `song`: BPM, key, meter, swing, musical direction, sample rate, generation models, cache path, and backend;
+- `blocks`: reusable generated or imported stem definitions;
+- `arrangement.lanes`: layered clips that reference blocks, variations, dependencies, and stems;
+- `stems`: render identities, status, paths, hashes, seeds, and exact render metadata;
+- `separationBundles`: retained separator outputs and non-destructive merges;
+- `mix`: master effects and the latest built mix path.
+
+Runtime validation is defined in `apps/desktop/src/lib/schema/project.ts`.
+
+## Blocks And Clips
+
+A block records its role, bars, optional meter override, instruments, separator target, validation category, prompt fields, energy/density, avoid text, level/effect sends, and implemented stem references.
+
+An arranger clip records:
 
 ```json
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-08-28T00:00:00.000Z",
-  "knownTags": ["jungle", "techno"],
-  "lastSelectedSessionId": "session_uuid",
-  "sidebarCollapsed": false,
-  "modelSettings": {
-    "cachePath": "/Volumes/Models/HuggingFace",
-    "hfHome": null,
-    "backend": "auto"
-  }
+  "id": "clip_uuid",
+  "blockId": "block_uuid",
+  "variation": 1,
+  "startBar": 0,
+  "bars": 8,
+  "inputBlockId": null,
+  "inputStemId": null,
+  "stemId": null
 }
 ```
 
-`workspace-commands.json` records workspace-level actions such as `select_workspace`.
+Variations are numbered 1 through 16. Dependency edits use `inputBlockId`; resolved renders pin the exact `inputStemId` used.
 
-## Session JSON
+## Stem Records And Sidecars
 
-Each session folder contains `session.json`:
+Generated WAV files live under `STEMS/`. Each WAV has a same-name JSON sidecar that records the exact composed prompt, prompt hash, backend, model, seed, duration, sample rate, device, input stem/path, generation settings, validation category/metrics, generation time, and publication timestamp.
 
-```json
-{
-  "schemaVersion": 1,
-  "id": "session_uuid",
-  "name": "se-260828-1",
-  "title": "se-260828-1",
-  "type": "free_format",
-  "bpm": 120,
-  "bpmPreset": "custom",
-  "createdAt": "2026-08-28T00:00:00.000Z",
-  "updatedAt": "2026-08-28T00:00:00.000Z",
-  "artifactCount": 1,
-  "tags": ["jungle"],
-  "exportFolder": "/Users/me/Desktop/exports",
-  "promptHistory": {
-    "activeRevisionId": "prompt_uuid",
-    "revisions": [
-      {
-        "id": "prompt_uuid",
-        "label": "current",
-        "prompt": "170 BPM, D minor, atmospheric pad",
-        "artifactFolder": "artifacts",
-        "locked": true,
-        "createdAt": "2026-08-28T00:00:00.000Z",
-        "updatedAt": "2026-08-28T00:00:00.000Z",
-        "archivedAt": null
-      }
-    ]
-  },
-  "lineage": {
-    "sourceSessionId": null,
-    "sourceArtifactId": null,
-    "sourcePromptRevisionId": null,
-    "action": null
-  },
-  "artifacts": []
-}
+A project stem record carries one of these statuses:
+
+```text
+missing queued rendering ready stale failed canceled archived superseded detached
 ```
 
-Default session names use `se-{yymmdd}-{N}`, choosing the first free integer for the current day. `name` and `title` start as the same value; users may edit `title`.
+Rerendering creates a new stem identity. Prior audio is never overwritten. Stale stems remain playable, superseded stems remain traceable, and detached prior revisions move under `ARCHIVE/` with a `DETACHED_` prefix.
 
-Supported session types are `stem_constructor`, `free_format`, and `midi_generator`.
+## Separation Bundles
 
-## Artifacts
+A separation bundle points to its raw source stem and retains every `bass`, `drums`, `guitar`, `piano`, `vocals`, and `other` output. Output levels and selected IDs are project state. Merges record the exact selected output IDs and per-output levels; creating a merge never changes or deletes its sources.
 
-Artifacts represent audio clips, separated audio stems, MIDI clips, guide-audio WAV files, premix audio, and conversion outputs.
+Bundle audio lives under `STEMS/SEPARATIONS/<bundle-id>/`. Archived bundles and merges move under `ARCHIVE/`.
 
-```json
-{
-  "id": "artifact_uuid",
-  "name": "artifact1",
-  "kind": "audio_clip",
-  "mediaType": "audio/wav",
-  "fileName": "artifact1.wav",
-  "filePath": "artifacts/artifact1.wav",
-  "parentArtifactId": null,
-  "sourceSessionId": "session_uuid",
-  "promptRevisionId": "prompt_uuid",
-  "modelBackend": {
-    "backend": "mlx",
-    "device": "metal",
-    "model": "facebook/musicgen-medium",
-    "generationSeconds": 22.4,
-    "validationMetrics": {},
-    "cachePath": "/Volumes/Models/HuggingFace"
-  },
-  "conversion": null,
-  "status": "ready",
-  "error": null,
-  "volumeDb": 0,
-  "createdAt": "2026-08-28T00:00:00.000Z",
-  "updatedAt": "2026-08-28T00:00:00.000Z",
-  "exportStatus": {
-    "exportedAt": null,
-    "exportPath": null,
-    "error": null
-  }
-}
-```
+## Mixes
 
-Default names are `artifact1`, `artifact2`, and so on. Users may rename display names without renaming existing files.
+Final mix WAV files and sidecars live under `MIXES/`. The project `mix.lastBuildPath` points to the latest successful build. Mix sidecars retain duration, sample rate, peak/loudness/normalization details, skipped clips, and effect settings.
 
-## Prompt Archives
+## Command Journal
 
-After a generation run, the active prompt revision is locked. Pressing `+`/archive locks the current revision under an `archive-N` label and creates a fresh editable prompt revision with the previous prompt text retained.
+Every meaningful project-facing action appends a command entry with:
 
-Existing artifact folders are not renamed during archive. New prompt revisions allocate suffix folders such as `archive-1`, `archive-2`, etc., so old relative paths stay valid.
+- `actor`: `user`, `code-agent`, `worker`, or `system`;
+- `source`: `web-ui`, `code-agent`, `worker`, or `system`;
+- type, summary, payload, timestamp, and optional before/after project hashes.
 
-## Command Journals
+The journal is append-only and must not contain secrets.
 
-Each session has append-only `commands.json`. Supported command types include:
+## Write And Portability Rules
 
-- `create_session`
-- `open_session`
-- `change_session_title`
-- `change_bpm`
-- `change_tags`
-- `change_export_folder`
-- `archive_prompt`
-- `generation_request`
-- `artifact_rename`
-- `artifact_export`
-- `artifact_reveal`
-- `artifact_conversion`
-- `artifact_separation`
-- `artifact_merge`
-- `derived_session_create`
-
-Command entries include `actor`, `source`, `summary`, payload details, and before/after state hashes where session state is involved.
-
-## Worker Contracts
-
-Text-only audio generation uses `facebook/musicgen-medium`. Reference/melody-conditioned generation uses `facebook/musicgen-melody`.
-
-The desktop blocks session creation, opening, and generation until worker preflight confirms both models are already present in the local cache. Missing models are reported with download hints; the app does not silently download weights.
+- Validate JSON through the runtime schemas before use.
+- Write `genost.json`, `commands.json`, workspace metadata, and sidecars atomically with a unique temp file plus rename.
+- Store project-owned paths relative to the project folder where possible.
+- Do not hide required project state in app-global storage or a database.
+- Do not overwrite or automatically render audio as a side effect of editing.
+- Skip missing stems during player builds and report every skipped clip.

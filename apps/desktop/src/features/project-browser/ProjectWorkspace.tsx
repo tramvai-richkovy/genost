@@ -55,7 +55,11 @@ export function ProjectWorkspace() {
               </span>
             ) : null}
             {status ? <span className="status-pill">{status}</span> : null}
-            <span className={`status-pill ${saveState === "saved" ? "ready" : saveState === "error" ? "warning" : ""}`}>
+            <span
+              aria-live="polite"
+              className={`status-pill ${saveState === "saved" ? "ready" : saveState === "error" ? "warning" : ""}`}
+              title={saveState === "error" ? error ?? "The latest project change could not be saved" : undefined}
+            >
               {saveState === "saved" ? "Saved" : saveState === "dirty" ? "Dirty" : saveState === "saving" ? "Saving…" : "Save error"}
             </span>
             <ThemeToggle />

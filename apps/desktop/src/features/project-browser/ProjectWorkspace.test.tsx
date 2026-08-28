@@ -44,4 +44,31 @@ describe("ProjectWorkspace", () => {
     await user.type(name, "Edited Pulse");
     expect(useStudioStore.getState().activeProject?.project.blocks[0].name).toBe("Edited Pulse");
   });
+
+  it("shows compact dirty and save-error states", () => {
+    renderWorkspace();
+
+    useStudioStore.setState({ saveState: "dirty" });
+    cleanup();
+    render(<ProjectWorkspace />);
+    expect(screen.getByText("Dirty")).toBeTruthy();
+
+    useStudioStore.setState({ saveState: "error", error: "Disk is read-only" });
+    cleanup();
+    render(<ProjectWorkspace />);
+    expect(screen.getByText("Save error").getAttribute("title")).toBe("Disk is read-only");
+  });
+
+  it("supports keyboard navigation across the studio tabs", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    const compositionTab = screen.getByRole("button", { name: "Composition" });
+    const blocksTab = screen.getByRole("button", { name: "Blocks" });
+
+    compositionTab.focus();
+    await user.tab();
+    expect(document.activeElement).toBe(blocksTab);
+    await user.keyboard("{Enter}");
+    expect(useStudioStore.getState().activeTab).toBe("blocks");
+  });
 });

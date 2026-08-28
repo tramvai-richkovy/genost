@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -55,15 +56,15 @@ SMTV_VALIDATION_CATEGORY_BLOCKS: dict[AudioContentCategory, frozenset[str]] = {
             "Salt Glass Pad",
             "Sludge Tide Bass",
             "Breathing Choir Grain",
-            "Siege Drone",
-            "Castle Gate Choir",
-            "Acid Oracle Bass",
-            "Ueno Dust Organ",
-            "Seraphic Sub Choir",
-            "Lost Deity Bass",
-            "Fogged Highrise Pad",
-            "Vengeance Subline",
-            "Kabukicho Static Veil",
+            "Iron Organ Drone",
+            "Low Ritual Choir",
+            "Acid Pedal Bass",
+            "Dust Organ",
+            "Sub Choir",
+            "Tritone Sub Bass",
+            "Fogged Pad",
+            "Predatory Subline",
+            "Static Veil",
         }
     ),
     "rhythm": frozenset(
@@ -73,10 +74,10 @@ SMTV_VALIDATION_CATEGORY_BLOCKS: dict[AudioContentCategory, frozenset[str]] = {
             "Container Pulse",
             "Rail Noise Bloom",
             "War Machine Kick",
-            "Magatsuhi Pillar Toms",
-            "Asakusa Spiral Pulse",
-            "Mythic Tom Spiral",
-            "Final Gate Dust",
+            "Pillar Toms",
+            "Spiral Pulse",
+            "Asymmetric Tom Spiral",
+            "Bowed Cymbal Dust",
             "Broken Neon Drums",
             "Rail Slice FX",
         }
@@ -87,16 +88,16 @@ SMTV_VALIDATION_CATEGORY_BLOCKS: dict[AudioContentCategory, frozenset[str]] = {
             "Melody",
             "Guitar ambient lead",
             "Choir Stabs",
-            "Fairy Bell Codes",
+            "Bell Codes",
             "Worn Guitar Harmonics",
             "Analog Basilica Alarm",
             "Scraped Guitar Swarm",
-            "Broken Edict Bell",
-            "Shrine Bell Coordinates",
+            "Cracked Bell",
+            "Bell Coordinates",
             "Frozen Guitar Halo",
             "Wordless Cut Choir",
-            "Apartment Feedback Guitar",
-            "Null Saint Piano",
+            "Narrow Amp Feedback Guitar",
+            "Cold Prepared Piano",
         }
     ),
 }
@@ -198,17 +199,26 @@ def instrument_focus_instruction(block: dict[str, Any]) -> str:
         return "generate one isolated arrangement stem, not a complete backing track"
 
     text = block_prompt_text(block)
+    target = block.get("separatorTarget")
     excluded: list[str]
-    if any(word in text for word in ("bass", "sub", "reese", "low end")):
+    if target == "bass":
         excluded = ["kick drums", "snare", "hi-hats", "percussion loops", "synth pads", "lead melodies"]
-    elif any(word in text for word in ("drum", "kick", "snare", "hat", "break", "percussion", "perc", "tom")):
+    elif target == "drums":
         excluded = ["basslines", "sub bass", "synth pads", "chord progressions", "lead melodies", "choirs"]
-    elif any(word in text for word in ("pad", "chord", "harmony", "harmonic", "atmosphere", "atmospheric", "drone")):
-        excluded = ["kick drums", "snare", "hi-hats", "percussion loops", "basslines", "lead riffs"]
-    elif any(word in text for word in ("lead", "melody", "melodic", "hook", "arp", "bell", "pluck", "guitar")):
-        excluded = ["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]
-    elif any(word in text for word in ("choir", "voice", "vocal")):
+    elif target == "vocals":
         excluded = ["lyrics", "kick drums", "snare", "basslines", "lead synths"]
+    elif target in {"guitar", "piano"}:
+        excluded = ["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]
+    elif re.search(r"\b(bass|sub|reese|low end)\b", text):
+        excluded = ["kick drums", "snare", "hi-hats", "percussion loops", "synth pads", "lead melodies"]
+    elif re.search(r"\b(drum|drums|kick|snare|hat|hats|break|percussion|perc|tom|toms)\b", text):
+        excluded = ["basslines", "sub bass", "synth pads", "chord progressions", "lead melodies", "choirs"]
+    elif re.search(r"\b(choir|voice|vocal|vocals)\b", text):
+        excluded = ["lyrics", "kick drums", "snare", "basslines", "lead synths"]
+    elif re.search(r"\b(lead|melody|melodic|hook|arp|arpeggio|bell|pluck|guitar|piano)\b", text):
+        excluded = ["kick drums", "snare", "hi-hats", "full drum kit", "basslines", "pad washes"]
+    elif re.search(r"\b(pad|chord|chords|harmony|harmonic|atmosphere|atmospheric|drone)\b", text):
+        excluded = ["kick drums", "snare", "hi-hats", "percussion loops", "basslines", "lead riffs"]
     else:
         excluded = ["full drum kit", "basslines", "lead melodies", "extra instruments"]
 
@@ -752,7 +762,11 @@ def render_requirement(
                 prompt=prompt,
                 duration_seconds=int(round(duration)),
                 output_path=str(output),
-                model_name=project["song"]["defaultTextModel"],
+                model_name=(
+                    project["song"]["defaultMelodyModel"]
+                    if requirement["inputStemId"]
+                    else project["song"]["defaultTextModel"]
+                ),
                 reference_audio_path=None
                 if not requirement["inputStem"]
                 else str(resolve_project_file(project_dir, requirement["inputStem"].get("filePath"))),
