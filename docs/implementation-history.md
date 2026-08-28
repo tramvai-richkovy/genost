@@ -1,6 +1,14 @@
 # GENOST Implementation History
 
-This file preserves the original implementation plan and completed checklist through 2026-08-25. Active work now lives in `docs/plan.md`.
+This file preserves historical implementation work. Active work lives only in root `plan.md`; root `idea.md` is the product specification.
+
+## Product Direction Correction — 2026-08-29
+
+- The sessions/artifacts product in root `idea.md` is authoritative.
+- The song-project DAW is proof-of-concept infrastructure, not the product.
+- The “Portable Project Product Cutover” below is retained as an accurate record of code changes, but its product decision was incorrect.
+- Session Studio can be selectively recovered from commit `780f22c`; current worker, packaging, separation, and validation improvements must be preserved.
+- The previous root and `docs/` plans were archived under `docs/archive/`; the reviewed recovery/completion checklist is root `plan.md`.
 
 ## Portable Project Product Cutover — Completed 2026-08-29
 

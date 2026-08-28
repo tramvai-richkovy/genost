@@ -1,3 +1,11 @@
+# Archived Song-Project POC Request
+
+This document describes the older song-project DAW proof of concept. It is retained as reusable implementation context only. It is not the GENOST product specification.
+
+The authoritative product specification is root [`idea.md`](../idea.md), and the only active implementation plan is root [`plan.md`](../plan.md).
+
+---
+
 add web ui for a song project that helps generating the song.
 start page is select folder with projects, when you select it - it shows you list of proojects as big square card with titla and last modified at, and Create New Project option. 
 project view has 5 tabs. 

@@ -1,20 +1,25 @@
-# GENOST Maintenance Guide
+# GENOST Sessions And Artifacts Maintenance Guide
 
 These instructions apply to the whole repository.
 
-## Project Intent
+## Product Authority And Intent
 
-GENOST is a local-first macOS AI music studio. Preserve the core workflow: project browser, Composition tab, Blocks tab, Arranger tab, Player tab, and Components render queue. The app should behave like a focused DAW-style workbench for generated stems, not a marketing page or a generic prompt toy.
+GENOST is a local-first macOS session studio for AI-assisted music generation. The authoritative product specification is root `idea.md`. The only active implementation checklist is root `plan.md`.
 
-Before implementation work, read `README.md`, `docs/plan.md`, `docs/original-idea.md`, and `docs/audiocraft-snippets.txt` for context.
+The product workflow is: select a working directory, pass local MusicGen Medium and Melody preflight, create or open a Stem Constructor, Free Format, or Midi Generator session, then generate and manage portable audio/MIDI artifacts and derived sessions.
+
+The song-project browser, Composition, Blocks, Arranger, Graph, Components, Premix, and Player workflow is proof-of-concept infrastructure. Reuse its reliable local storage, audio, separation, worker, packaging, and visual patterns where useful, but do not mount it as the product shell or treat `docs/original-idea.md` as the product specification.
+
+Before implementation work, read `idea.md`, `plan.md`, `README.md`, `docs/KNOWLEDGEBASE.md`, and `docs/audiocraft-snippets.txt`. Consult `docs/original-idea.md` only when reusing POC infrastructure.
 
 ## Current Planning State
 
-- `docs/plan.md` is the active working checklist. Keep it current while implementing.
+- Root `plan.md` is the active working checklist. Keep it current while implementing.
 - Check off completed items as they are finished.
-- Add new required work to `Open Items`.
+- Add newly discovered required work to the relevant implementation-checklist section.
 - Put blocking or review-needed decisions in `QnA` with a suggested answer.
-- Do not remove `docs/plan.md` while unresolved QnA remains.
+- `docs/plan.md` is a pointer only. Do not create a second active plan.
+- Do not remove root `plan.md` while unresolved QnA or unfinished work remains.
 
 ## Planned Stack
 
@@ -24,9 +29,10 @@ Before implementation work, read `README.md`, `docs/plan.md`, `docs/original-ide
 - Runtime schemas: Zod on the TypeScript side.
 - AI backend: Python worker process launched by Tauri.
 - Audio generation: Meta AudioCraft MusicGen.
-- Playback and scheduling: Tone.js.
-- Effects: TUNA Web Audio effects.
-- Persistence: project-local JSON and WAV files. Avoid adding a database for MVP unless there is a concrete performance or data-integrity need.
+- MIDI visualization/playback: WaveRoll.
+- Playback and preview: native Web Audio/Tone.js helpers where useful.
+- Effects and merge preview: reuse the local Tuna-style Web Audio graph where useful.
+- Persistence: workspace metadata plus session-local JSON, MIDI, and audio files. Do not add a database for MVP.
 
 ## Expected Repository Shape
 
@@ -42,112 +48,107 @@ docs/                     detailed setup and format docs
 Frontend feature folders should map to product surfaces:
 
 ```text
-project-browser/
-composition/
-blocks/
-arranger/
-player/
-render-queue/
+session-studio/
+session-sidebar/
+session-create/
+stem-constructor/
+free-format/
+midi-generator/
+artifacts/
 ```
 
-Shared frontend helpers belong under `apps/desktop/src/lib/`, grouped by purpose such as `audio`, `project`, `schema`, and `worker-client`.
+Shared frontend helpers belong under `apps/desktop/src/lib/`, grouped by purpose such as `audio`, `session`, `schema`, and `worker-client`.
 
-## Project File Invariants
+## Workspace And Session File Invariants
 
-Each song project is a folder containing `genost.json` plus generated assets:
+The selected working directory contains workspace metadata, a workspace command journal, and one portable folder per session:
 
 ```text
-commands.json
-STEMS/
-MIXES/
-REFERENCES/
-WAVEFORMS/
-JOBS/
-ARCHIVE/
+genost-workspace.json
+workspace-commands.json
+se-YYMMDD-N/
+  session.json
+  commands.json
+  artifacts/
+  archive-1/
+  archive-2/
+  jobs/
 ```
 
 Rules:
 
-- Treat `genost.json` as the source of truth.
-- Treat `commands.json` as the append-only journal of meaningful web UI inputs and project actions.
-- Validate project data through schemas before using it.
-- Write `genost.json` atomically with a temp file and rename.
-- Keep project folders portable and inspectable. Do not hide required song state in app-global storage.
-- Store generated WAV files under `STEMS/`.
-- Store stem metadata in a sidecar JSON beside each WAV.
-- Store final mix WAV files under `MIXES/`.
-- Do not overwrite or delete old stems during rerender. Create a new stem and mark old stems superseded.
-- Stale stems remain playable and usable.
-- Archive stale or detached prior revisions under `ARCHIVE/`.
-- Prefix archived stems with `DETACHED_` when the source block was removed or changed enough that the stem is no longer current.
+- Treat `session.json` as a session's source of truth.
+- Treat each `commands.json` as the append-only journal of meaningful session-facing actions.
+- Validate workspace, session, journal, artifact, and sidecar data through schemas before use.
+- Write JSON atomically with a unique temp file and rename; serialize writes per workspace/session.
+- Keep session folders portable and inspectable. Do not hide required state in app-global storage.
+- Copy manually selected reference audio into the session and register it as an artifact.
+- Keep produced audio, MIDI, guides, separation outputs, and premixes inside the owning session folder.
+- Store provenance metadata in a sidecar beside every produced artifact.
+- Never overwrite or delete prior generated/converted audio during rerender or retry.
+- Prompt revision labels and artifact folders are immutable once published.
+- Archiving a prompt never renames an existing folder; the next revision gets a new collision-safe `archive-N` folder.
+- Preserve lineage across source sessions, source artifacts, conversions, guide WAVs, generated audio, and derived sessions.
 
 ## Command Journal Rules
 
-- Append a `commands.json` entry for every meaningful project-facing UI input or action.
+- Append a journal entry for every meaningful workspace/session-facing UI input or action.
 - UI edits use `actor: "user"` and `source: "web-ui"`.
 - Code-agent edits use `actor: "code-agent"` and `source: "code-agent"`.
 - Include enough payload data for a future code agent to understand or transform the action.
-- Include project state fingerprints when available.
+- Include session state fingerprints when available.
 - Keep command entries append-only.
 - Do not put secrets into `commands.json`.
 
-## Generation Invariants
+## Model Gate And Generation Invariants
 
-Seed generation:
+- Folder/cache setup remains accessible before model preflight.
+- Block session creation and opening unless both `facebook/musicgen-medium` and `facebook/musicgen-melody` are locally available.
+- Missing optional tools disable only their corresponding actions: Text2midi, MIDI guide dependencies, Basic Pitch, separation/merge, or Omnizart drum transcription.
 
-- No input stem.
+Text generation:
+
+- No reference audio.
 - Uses text generation.
-- Default model: `facebook/musicgen-medium`.
-- Fallback model: `facebook/musicgen-small`.
+- Required model: `facebook/musicgen-medium`.
 
 Conditioned generation:
 
-- Has an input/reference stem.
+- Has imported, linked, MIDI-guide, or derived reference audio.
 - Uses melody/chroma-conditioned generation.
-- Default model: `facebook/musicgen-melody`.
-
-Stem identity:
-
-```text
-blockId + variation + inputStemId + prompt/settings hash + seed
-```
+- Required model: `facebook/musicgen-melody`.
 
 Rules:
 
-- Variations are numbered 1 through 16.
-- Identical stem requirements may reuse the same WAV.
-- Different variation numbers produce different passes.
-- Regenerate creates a new seed and a new stem identity.
-- Editing the global composition prompt or block settings marks dependent stems stale by hash mismatch.
-- If a changed stem was used as input for child stems, mark child stems stale too.
-- The Graph tab is the block dependency view. It edits `inputBlockId` links and must mark target/downstream stems stale after remapping.
-- Rendering must be blocked while `findBlockGraphCycle(project)` returns a cycle.
-- Nothing renders automatically. Rendering must come from an explicit user action.
-- Store the exact composed prompt, model, seed, duration, device, input stem, and generation settings in stem metadata.
+- Generation quantities are 1 through 16.
+- Each result gets its own artifact identity, collision-safe file, recorded seed/settings, and sidecar.
+- Regenerate/retry creates a new artifact; it does not overwrite an older result.
+- A prompt revision becomes locked only after its generation request is durably recorded.
+- Nothing generates, converts, separates, merges, exports, or derives automatically from editing.
+- Store the exact prompt, prompt revision, backend, model, seed, duration, device, reference artifact/path, generation settings, validation metrics, and timings.
+- Text2midi models should be cached or served by a long-lived process; do not reload weights once per requested result.
+- `just test` is the real-model CLI acceptance command. It reads root `test_prompt.md` and produces exactly five independent MusicGen Medium compositions with distinct recorded seeds.
 
 ## Audio Rules
 
-- Convert bars to seconds with `seconds = bars * beatsPerBar * 60 / bpm`.
-- Default `beatsPerBar` is 4.
-- Normalize generated/imported audio to the project sample rate before reliable playback or mixdown.
-- Use Tone.js for transport and scheduling.
-- Use TUNA for delay, reverb/convolver, compressor, gain, and related effects.
-- MVP mix build may use `OfflineAudioContext` with the same Web Audio/TUNA graph.
-- Add a Python mixdown fallback only if browser offline rendering is proven unreliable.
-- Add short fades or crossfades at clip boundaries to avoid clicks.
-- Player build must skip missing stems and report skipped clips.
+- Normalize generated/imported audio to the session sample rate before reliable playback, conversion, or merge.
+- MIDI-to-guide WAV uses pitch-pure sine waves, skips drum tracks, adds short note fades, avoids clipping, and publishes 16-bit PCM at 32 kHz.
+- Audio-derived sessions must separate/remove drums before melodic MIDI extraction, then synthesize a clean guide before MusicGen Melody.
+- Separation and merges are non-destructive and retain all source/output files.
+- Missing files must disable actions and produce clear errors rather than disappearing from session state.
 
 ## macOS Backend Rules
 
-- Prefer Apple Silicon with PyTorch `mps` when available.
+- Prefer Apple Silicon with the supported MLX/Metal backend; keep AudioCraft CPU as a diagnostic path.
 - Assume the target Mac has at least 16 GB unified memory unless the user says otherwise.
 - Keep CPU fallback possible for diagnostics, but do not imply it will be fast.
 - Provide a backend validation script before relying on generation.
-- Validate Python version, `torch`, MPS availability, AudioCraft, `torchaudio`, ffmpeg, and model cache writability.
+- Validate Python/runtime dependencies, MLX/Metal, ffmpeg, both MusicGen models, and model cache writability.
 - Expose model cache settings. Large model files may live on an external SSD.
 - Relevant environment variables include `AUDIOCRAFT_CACHE_DIR` and `HF_HOME`.
 - Cache loaded model instances in the Python worker so repeated renders do not reload weights unnecessarily.
 - Return structured worker errors for missing cache paths, missing input stems, out-of-memory, unsupported device, failed imports, and failed audio writes.
+- Treat Omnizart drum transcription as an optional capability because its official project documents ARM macOS incompatibility.
 
 ## License Rule
 
@@ -157,14 +158,14 @@ If commercial use becomes a goal, add a generation backend abstraction before de
 
 ## UI And Design Rules
 
-- Build the actual studio as the first screen after folder selection. Do not add a landing page.
+- Build the Session Studio as the first usable screen after folder/model setup. Do not add a marketing landing page.
 - Use a dense DAW-like layout.
 - Use Tailwind with a near-black workbench base, graphite panels, cold cyan grid lines, acid green active states, red/orange warnings, and restrained violet accents.
 - Avoid a one-hue palette.
-- Use cards only for project tiles and repeated items. Do not nest cards.
+- Use cards only for repeated session/artifact items. Do not nest cards.
 - Use lucide icons for icon buttons where available.
 - Use tooltips for icon-only controls.
-- Keep timeline tracks, queue rows, transport controls, cards, and buttons dimensionally stable.
+- Keep the session sidebar, prompt composer, artifact rows/cards, previews, queue rows, and buttons dimensionally stable.
 - Ensure text does not overflow or overlap at laptop and desktop sizes.
 - Avoid explanatory in-app copy. Prefer labels, statuses, tooltips, and disabled states.
 
@@ -172,12 +173,12 @@ If commercial use becomes a goal, add a generation backend abstraction before de
 
 Add focused tests as implementation appears:
 
-- TypeScript tests for schema validation, bar-to-seconds conversion, stem identity hashing, stale detection, and prompt composition.
-- Python tests for generator routing with mocked AudioCraft models.
-- Python tests for audio save paths and metadata sidecars.
-- UI tests for project creation, tab navigation, block editing, arranger clip creation, render queue derivation, and player build with fixture WAVs.
-- A no-model development mode should generate short fixture tones so UI and queue behavior can be tested without downloading MusicGen weights.
-- Optional local smoke tests can use `facebook/musicgen-small`.
+- TypeScript tests for workspace/session/artifact schemas, prompt revisions, constructor prompts, names, lineage, journals, path resolution, and collision allocation.
+- Store/UI tests for model gating, working-directory selection, sidebar search/filter/collapse, session creation, all three session types, revision selection, and artifact actions.
+- Python tests for MusicGen routing, cached Text2midi batching, guide WAVs, Basic Pitch, Omnizart error mapping, separation/merge, save paths, and sidecars.
+- Model-free fixture tests must not download model weights.
+- `just verify` is the deterministic repository verification command.
+- `just test` is intentionally model-backed: it uses `test_prompt.md` in CLI mode to produce five MusicGen Medium compositions and must fail clearly if the configured model is unavailable.
 
 Before marking meaningful implementation work complete, run the relevant lint, typecheck, unit tests, and available UI tests. If model-backed tests cannot run locally, state that clearly.
 
@@ -186,8 +187,8 @@ Before marking meaningful implementation work complete, run the relevant lint, t
 - Keep changes scoped to the active plan item.
 - Preserve local-first behavior.
 - Do not introduce cloud services, telemetry, accounts, or background uploads unless explicitly requested.
-- Do not add automatic rendering as a side effect of editing prompts, blocks, or arrangements.
+- Do not add automatic generation as a side effect of editing prompts, session metadata, constructor fields, or references.
 - Do not delete generated user audio unless the user explicitly asks for cleanup behavior.
-- Do not skip `commands.json` updates when adding project-editing UI.
+- Do not skip workspace/session journal updates when adding user-facing actions.
 - Prefer structured parsing and schemas over ad hoc string manipulation.
 - Keep comments sparse and useful.

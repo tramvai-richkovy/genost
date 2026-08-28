@@ -1,4 +1,6 @@
-# GENOST Portable Project Format
+# Archived Song-Project POC Format
+
+This is the file format of the older song-project DAW proof of concept. The sessions/artifacts product will use the format finalized by root `plan.md`.
 
 GENOST projects are local, portable song folders. The desktop validates every persisted file before use and keeps required song state inspectable on disk.
 

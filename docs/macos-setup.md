@@ -1,6 +1,6 @@
 # GENOST macOS Setup
 
-GENOST is macOS-first for this implementation. The target machine is Apple Silicon with local model files, local project/session files, and no cloud service dependency.
+GENOST is macOS-first for this implementation. The target machine is Apple Silicon with local model files, local session/artifact files, and no cloud service dependency.
 
 ## System Packages
 
@@ -120,7 +120,7 @@ python -m pip install demucs
 
 ## Separation And Merge
 
-The product separation and Premix workflow uses `audio-separator`. Configure it with:
+The artifact split/volume/merge workflow uses `audio-separator`. Configure it with:
 
 ```bash
 ./scripts/setup-audio-separator.sh

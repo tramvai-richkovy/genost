@@ -60,6 +60,7 @@ Do not treat restoration as completion. The reviewed snapshot has these known ga
 - Text2midi launches a fresh model process once per requested result; it needs a cached worker-side adapter or an explicitly managed long-lived process.
 - Worker preflight does not report Text2midi, Basic Pitch, guide-WAV, separator, and drum-transcription capabilities as separate action-level readiness states.
 - Omnizart documents ARM macOS incompatibility. Its action must be capability-gated and isolated; it cannot be allowed to block the entire studio.
+- The checked local environment is Python 3.10.17 on arm64, while README text still describes a 3.11 environment. Basic Pitch imports but reports unverified/unsupported dependency combinations; conversion readiness needs a real short-file smoke test, not an import-only check.
 - Reloading a remembered working directory does not automatically complete preflight, leaving the studio blocked until a manual check.
 - Model-setting edits can trigger overlapping preflight requests.
 - Session creation closes its form even when persistence or validation fails.
@@ -118,6 +119,8 @@ Do not treat restoration as completion. The reviewed snapshot has these known ga
 - [ ] Require local `facebook/musicgen-medium` and `facebook/musicgen-melody` before session creation/opening.
 - [ ] Report backend, device, cache paths, cache writability, both model states, and actionable setup errors.
 - [ ] Add separate readiness checks for Text2midi, MIDI guide dependencies, Basic Pitch, separator, ffmpeg/merge, and Omnizart.
+- [ ] Align the documented/bundled Apple Silicon Python version with the actually verified Basic Pitch runtime and pin compatible conversion dependencies.
+- [ ] Make Basic Pitch readiness include a short local inference smoke test or an equivalent verified model/runtime probe rather than import success alone.
 - [ ] Disable individual artifact actions when their optional capability is unavailable; keep unrelated session work usable.
 - [ ] Add stale-request protection so an older preflight response cannot overwrite newer settings.
 
