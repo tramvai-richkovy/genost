@@ -91,7 +91,7 @@ Do not treat restoration as completion. The reviewed snapshot has these known ga
 - [x] Archive the conflicting root and `docs/` plans.
 - [x] Establish `idea.md` and this file as the only product specification and active implementation plan.
 - [x] Record the known defects that must be fixed after restoration.
-- [ ] Commit the documentation-only planning reset after user review.
+- [x] Commit the documentation-only planning reset after user review.
 
 ### 1. Restore the product shell without regressing current infrastructure
 
