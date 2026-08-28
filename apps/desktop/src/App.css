@@ -1,0 +1,1723 @@
+@import "tailwindcss";
+@import "@rintran720/cyberpunk-ui";
+
+:root {
+  font-family: var(--cp-font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--color-genost-text);
+  background-color: var(--color-genost-base);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+@theme {
+  --color-genost-base: var(--cp-bg);
+  --color-genost-panel: var(--cp-bg-soft);
+  --color-genost-panel-2: var(--cp-bg-raised);
+  --color-genost-line: var(--cp-border);
+  --color-genost-text: var(--cp-fg);
+  --color-genost-muted: var(--cp-fg-muted);
+  --color-genost-cyan: var(--cp-cyan);
+  --color-genost-acid: var(--cp-green);
+  --color-genost-violet: var(--cp-purple);
+  --color-genost-warn: var(--cp-orange);
+  --color-genost-danger: var(--cp-red);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-cp-theme="light"] .cp-root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-genost-base);
+  margin: 0;
+  min-width: 1180px;
+  min-height: 760px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+:where(button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-genost-acid);
+  outline-offset: 2px;
+}
+
+.waveform-preview {
+  background: color-mix(in oklab, var(--color-genost-base) 82%, transparent);
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-muted);
+  min-height: 3rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.empty-state {
+  align-items: center;
+  border: 1px dashed var(--color-genost-line);
+  color: var(--color-genost-muted);
+  display: flex;
+  gap: 0.75rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.backend-capabilities {
+  color: var(--color-genost-muted);
+  display: grid;
+  font-size: 0.76rem;
+  gap: 0.25rem 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.implemented-melody-row {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  overflow: hidden;
+}
+
+.implemented-melody-row .icon-button {
+  min-height: 2rem;
+  width: 2rem;
+}
+
+.separation-bundle {
+  background: color-mix(in oklab, var(--color-genost-violet) 5%, var(--color-genost-base));
+  border-left: 2px solid var(--color-genost-violet);
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+}
+
+.separation-output-row {
+  align-items: center;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 1rem 5rem 5.5rem minmax(0, 1fr) 2rem 2rem;
+  min-height: 2.25rem;
+}
+
+.separation-output-row .icon-button {
+  min-height: 2rem;
+  width: 2rem;
+}
+
+.premix-output-row {
+  grid-template-columns: 1rem 5rem 5.5rem minmax(8rem, 1fr) minmax(10rem, 13rem) 2rem 2rem;
+}
+
+.premix-volume {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 3.5rem minmax(5rem, 1fr);
+}
+
+.premix-volume span {
+  color: var(--color-genost-muted);
+  font-family: var(--cp-font-mono);
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.premix-volume input {
+  accent-color: var(--color-genost-acid);
+  min-width: 0;
+  width: 100%;
+}
+
+.waveform-preview svg {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.waveform-preview polyline {
+  fill: none;
+  stroke: var(--color-genost-cyan);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.waveform-preview > span {
+  align-items: center;
+  display: flex;
+  font-size: 0.72rem;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+  text-transform: uppercase;
+}
+
+.waveform-preview > i {
+  background: var(--color-genost-acid);
+  box-shadow: 0 0 8px var(--color-genost-acid);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.arranger-transport {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  min-height: 4rem;
+}
+
+.transport-progress {
+  background: var(--color-genost-line);
+  height: 0.4rem;
+  margin-left: 0.5rem;
+  min-width: 10rem;
+  overflow: hidden;
+  flex: 1;
+}
+
+.transport-progress > i {
+  background: var(--color-genost-acid);
+  display: block;
+  height: 100%;
+}
+
+.timeline-clip > :not(.clip-waveform) {
+  position: relative;
+  z-index: 1;
+}
+
+.clip-waveform {
+  border: 0;
+  inset: 0;
+  min-height: 0;
+  opacity: 0.2;
+  pointer-events: none;
+  position: absolute;
+}
+
+.cp-root :where(h1, h2, h3, h4, h5, h6),
+.cp-root :where(button, input, textarea, select) {
+  letter-spacing: 0;
+}
+
+.genost-screen {
+  background:
+    linear-gradient(rgba(0, 240, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.055) 1px, transparent 1px),
+    var(--color-genost-base);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+.control-button,
+.icon-button,
+.tab-button,
+.text-button {
+  align-items: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 2.5rem;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 180ms ease,
+    color 160ms ease,
+    transform 120ms ease;
+}
+
+.control-button {
+  background: color-mix(in oklab, var(--color-genost-cyan) 8%, var(--color-genost-panel-2));
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--color-genost-cyan);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--color-genost-cyan);
+  font-family: var(--cp-font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0 0.85rem;
+  text-transform: uppercase;
+}
+
+.control-button:hover,
+.tab-button:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: inset 0 0 0 1px var(--color-genost-cyan), var(--cp-glow-cyan);
+  color: var(--color-genost-text);
+}
+
+.control-button.danger {
+  background: color-mix(in oklab, var(--color-genost-danger) 10%, var(--color-genost-panel-2));
+  box-shadow: inset 0 0 0 1px var(--color-genost-danger);
+  color: var(--color-genost-danger);
+}
+
+.control-button.danger:hover {
+  border-color: var(--color-genost-danger);
+  box-shadow: inset 0 0 0 1px var(--color-genost-danger), var(--cp-glow-red);
+  color: var(--color-genost-text);
+}
+
+.control-button:active,
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+.icon-button {
+  aspect-ratio: 1;
+  background: color-mix(in oklab, var(--color-genost-cyan) 7%, var(--color-genost-panel-2));
+  border-color: var(--color-genost-cyan);
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  color: var(--color-genost-cyan);
+  width: 2.5rem;
+}
+
+.icon-button.active {
+  background: var(--color-genost-acid);
+  border-color: var(--color-genost-acid);
+  box-shadow: var(--cp-glow-green);
+  color: var(--color-genost-base);
+}
+
+.icon-button.danger {
+  color: var(--color-genost-danger);
+  border-color: color-mix(in oklab, var(--color-genost-danger) 70%, var(--color-genost-line));
+}
+
+.text-button {
+  color: var(--color-genost-muted);
+  min-height: auto;
+}
+
+.text-button:hover {
+  color: var(--color-genost-cyan);
+  text-shadow: 0 0 8px currentColor;
+}
+
+.tab-button {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--color-genost-muted);
+  flex: 0 0 auto;
+  font-family: var(--cp-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0 0.9rem;
+  text-transform: uppercase;
+}
+
+.tab-button.active {
+  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--color-genost-cyan) 14%, transparent));
+  border-color: var(--color-genost-acid);
+  color: var(--color-genost-acid);
+  text-shadow: 0 0 8px currentColor;
+}
+
+.project-card {
+  aspect-ratio: 1;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-cyan) 8%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  color: var(--color-genost-text);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  padding: 1.1rem;
+  position: relative;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 120ms ease;
+}
+
+.project-card::before {
+  background: var(--color-genost-cyan);
+  box-shadow: 0 0 12px var(--color-genost-cyan);
+  content: "";
+  height: 3px;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 56px;
+}
+
+.project-card:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.field-group {
+  color: var(--color-genost-muted);
+  display: grid;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.field,
+.mini-field {
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-mono);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 180ms ease,
+    background-color 150ms ease;
+}
+
+.field {
+  min-height: 2.6rem;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+
+.mini-field {
+  min-height: 1.65rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.field:focus,
+.mini-field:focus {
+  border-color: var(--color-genost-cyan);
+  box-shadow: 0 0 0 1px var(--color-genost-cyan), var(--cp-glow-cyan);
+}
+
+select.field,
+select.mini-field {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-genost-cyan) 50%),
+    linear-gradient(135deg, var(--color-genost-cyan) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1rem) 50%,
+    calc(100% - 0.6rem) 50%;
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px;
+  padding-right: 2rem;
+}
+
+input[type="range"].field {
+  accent-color: var(--color-genost-acid);
+  background: transparent;
+  border-color: color-mix(in oklab, var(--color-genost-acid) 45%, var(--color-genost-line));
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+.block-title-input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-display);
+  font-size: 2.65rem;
+  font-weight: 760;
+  line-height: 1.05;
+  min-height: 3.8rem;
+  outline: none;
+  padding: 0.2rem 0.35rem;
+  width: 100%;
+}
+
+.block-title-input:focus {
+  background: var(--color-genost-panel-2);
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.block-palette {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.block-token {
+  align-items: center;
+  background: color-mix(in oklab, var(--block-color, var(--color-genost-cyan)) 12%, var(--color-genost-panel));
+  border: 1px solid color-mix(in oklab, var(--block-color, var(--color-genost-cyan)) 58%, var(--color-genost-line));
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--color-genost-text);
+  cursor: grab;
+  display: grid;
+  flex: 0 0 180px;
+  gap: 0.15rem;
+  min-height: 3.25rem;
+  padding: 0.45rem 0.65rem;
+  position: relative;
+  text-align: left;
+}
+
+.block-token span:last-child {
+  color: var(--color-genost-muted);
+  font-size: 0.75rem;
+}
+
+.block-token::before {
+  background: var(--block-color, var(--color-genost-cyan));
+  box-shadow: 0 0 8px var(--block-color, var(--color-genost-cyan));
+  content: "";
+  height: 100%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 3px;
+}
+
+.status-pill {
+  align-items: center;
+  background: var(--color-genost-panel-2);
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  color: var(--color-genost-muted);
+  display: inline-flex;
+  font-family: var(--cp-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  min-height: 1.7rem;
+  padding: 0 0.65rem;
+  white-space: nowrap;
+}
+
+.status-pill.ready {
+  border-color: var(--color-genost-acid);
+  color: var(--color-genost-acid);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--color-genost-acid) 45%, transparent);
+}
+
+.status-pill.warning {
+  border-color: var(--color-genost-warn);
+  color: var(--color-genost-warn);
+}
+
+.clip-meta-status {
+  align-items: center;
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.clip-status-pill {
+  flex: 0 1 7.5rem;
+  font-size: 0.66rem;
+  min-height: 1.35rem;
+  overflow: hidden;
+  padding: 0 0.45rem;
+  text-overflow: ellipsis;
+}
+
+.tag-chip {
+  align-items: center;
+  background: var(--color-genost-panel);
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  color: var(--color-genost-muted);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  min-height: 1.8rem;
+  padding: 0 0.65rem;
+}
+
+.tag-chip:hover,
+.tag-chip.active {
+  border-color: var(--color-genost-cyan);
+  color: var(--color-genost-text);
+}
+
+.tag-chip.active {
+  background: color-mix(in oklab, var(--color-genost-cyan) 18%, var(--color-genost-panel-2));
+  box-shadow: 0 0 10px color-mix(in oklab, var(--color-genost-cyan) 45%, transparent);
+}
+
+.work-panel {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-cyan) 5%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  padding: 1rem;
+  position: relative;
+}
+
+.work-panel::before {
+  background: var(--color-genost-violet);
+  box-shadow: 0 0 10px var(--color-genost-violet);
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 42px;
+}
+
+.work-panel.render-too-long {
+  border-color: color-mix(in oklab, var(--color-genost-danger) 72%, var(--color-genost-line));
+}
+
+.work-panel.render-too-long::after {
+  background: var(--color-genost-danger);
+  box-shadow: var(--cp-glow-red);
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.duration-warning-icon {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-danger) 16%, var(--color-genost-panel-2));
+  border: 1px solid var(--color-genost-danger);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--color-genost-danger) 42%, transparent);
+  color: var(--color-genost-danger);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.5rem;
+  justify-content: center;
+  width: 2.5rem;
+}
+
+.duration-warning-icon.compact {
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
+.timeline {
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.timeline-scroll {
+  max-height: min(62vh, 640px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.timeline-content {
+  min-width: 100%;
+}
+
+.timeline-lane {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  min-height: 104px;
+  min-width: 100%;
+}
+
+.timeline-lane + .timeline-lane {
+  border-top: 1px solid var(--color-genost-line);
+}
+
+.timeline-lane.drop-active .timeline-lane-label {
+  background: color-mix(in oklab, var(--color-genost-acid) 16%, var(--cp-bg-sunken));
+  color: var(--color-genost-acid);
+  text-shadow: 0 0 8px currentColor;
+}
+
+.timeline-lane-label {
+  align-items: center;
+  background: var(--cp-bg-sunken);
+  border-right: 1px solid var(--color-genost-line);
+  color: var(--color-genost-muted);
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0 0.8rem;
+}
+
+.timeline-track {
+  background-color: color-mix(in oklab, var(--color-genost-panel) 84%, var(--cp-bg-sunken));
+  background-image: linear-gradient(to right, color-mix(in oklab, var(--color-genost-cyan) 28%, transparent) 1px, transparent 1px);
+  background-size: var(--bar-width, 44px) 100%;
+  min-height: 104px;
+  overflow: visible;
+  position: relative;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.timeline-lane.drop-active .timeline-track {
+  background-color: color-mix(in oklab, var(--color-genost-acid) 10%, var(--color-genost-panel));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--color-genost-acid) 70%, transparent),
+    inset 0 0 24px color-mix(in oklab, var(--color-genost-acid) 16%, transparent);
+}
+
+.timeline-clip {
+  background: color-mix(in oklab, var(--block-color, var(--color-genost-cyan)) 20%, var(--color-genost-panel-2));
+  border: 1px solid var(--block-color, var(--color-genost-cyan));
+  border-radius: 0;
+  box-shadow: 0 0 14px color-mix(in oklab, var(--block-color, var(--color-genost-cyan)) 35%, transparent);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--color-genost-text);
+  cursor: grab;
+  height: 78px;
+  left: 0;
+  min-width: 44px;
+  overflow: hidden;
+  padding: 0.55rem;
+  position: absolute;
+  top: 13px;
+  z-index: 2;
+}
+
+.timeline-clip.dragging {
+  opacity: 0.45;
+}
+
+.timeline-clip.menu-open {
+  clip-path: none;
+  overflow: visible;
+  z-index: 9;
+}
+
+.timeline-clip.resizing {
+  box-shadow:
+    var(--cp-glow-green),
+    inset 0 0 18px color-mix(in oklab, var(--color-genost-acid) 22%, transparent);
+}
+
+.timeline-clip.render-too-long {
+  background: color-mix(in oklab, var(--color-genost-danger) 16%, var(--color-genost-panel-2));
+  border-color: var(--color-genost-danger);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--color-genost-danger) 42%, transparent);
+}
+
+.timeline-clip.render-too-long::after {
+  background: var(--color-genost-danger);
+  box-shadow: var(--cp-glow-red);
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.session-studio {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 1180px;
+}
+
+.studio-topbar {
+  align-items: center;
+  border-bottom: 1px solid var(--color-genost-line);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  min-height: 4.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.studio-topbar h1 {
+  font-family: var(--cp-font-display);
+  font-size: 1.7rem;
+  font-weight: 760;
+  margin: 0.15rem 0 0;
+}
+
+.eyebrow {
+  color: var(--color-genost-acid);
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.setup-strip {
+  border-bottom: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem 1.25rem;
+}
+
+.setup-path {
+  align-items: center;
+  color: var(--color-genost-muted);
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.setup-path span,
+.path-readout {
+  font-family: var(--cp-font-mono);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setup-grid {
+  align-items: end;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(18rem, 1.2fr) minmax(18rem, 1fr) 10rem auto;
+}
+
+.setup-refresh {
+  min-width: 6.8rem;
+}
+
+.preflight-grid {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.graph-warning,
+.studio-error {
+  border: 1px solid color-mix(in oklab, var(--color-genost-warn) 70%, var(--color-genost-line));
+  color: var(--color-genost-warn);
+  display: grid;
+  font-size: 0.78rem;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.studio-error {
+  margin: 0.8rem 1.25rem 0;
+}
+
+.studio-layout {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.session-sidebar {
+  background: color-mix(in oklab, var(--color-genost-panel) 92%, var(--cp-bg-sunken));
+  border-right: 1px solid var(--color-genost-line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+  padding: 0.95rem;
+  width: 21rem;
+}
+
+.session-sidebar.collapsed {
+  align-items: center;
+  width: 4.5rem;
+}
+
+.sidebar-head {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.sidebar-search {
+  align-items: center;
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-muted);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 2.45rem;
+  padding: 0 0.7rem;
+}
+
+.sidebar-search input {
+  background: transparent;
+  border: 0;
+  color: var(--color-genost-text);
+  min-width: 0;
+  outline: 0;
+}
+
+.session-list {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.session-row {
+  background: color-mix(in oklab, var(--color-genost-panel-2) 70%, transparent);
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-text);
+  cursor: pointer;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 4.3rem;
+  padding: 0.65rem;
+  text-align: left;
+}
+
+.session-row.active,
+.session-row:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--color-genost-cyan) 35%, transparent);
+}
+
+.session-row-main {
+  display: grid;
+  min-width: 0;
+}
+
+.session-row-main span,
+.session-row-main small,
+.session-row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-row-main small,
+.session-row-meta {
+  color: var(--color-genost-muted);
+  font-size: 0.72rem;
+}
+
+.session-row-meta {
+  align-items: end;
+  display: grid;
+  justify-items: end;
+}
+
+.session-row-meta b {
+  color: var(--color-genost-acid);
+  font-family: var(--cp-font-mono);
+}
+
+.studio-main {
+  min-height: 0;
+  overflow: auto;
+  padding: 1.1rem;
+}
+
+.setup-empty {
+  align-items: center;
+  border: 1px dashed var(--color-genost-line);
+  color: var(--color-genost-muted);
+  display: flex;
+  gap: 0.75rem;
+  min-height: 8rem;
+  padding: 1rem;
+}
+
+.new-session-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.new-session-choice {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-violet) 7%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 18rem;
+  padding: 1.1rem;
+  text-align: left;
+}
+
+.new-session-choice:hover {
+  border-color: var(--color-genost-acid);
+  box-shadow: var(--cp-glow-green);
+}
+
+.choice-topline {
+  align-items: center;
+  color: var(--color-genost-cyan);
+  display: flex;
+  justify-content: space-between;
+}
+
+.choice-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.choice-title {
+  font-family: var(--cp-font-display);
+  font-size: 2.1rem;
+  font-weight: 780;
+  line-height: 1.05;
+}
+
+.choice-copy {
+  color: var(--color-genost-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.session-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 980px;
+}
+
+.panel-title-row,
+.artifact-section-head,
+.composer-toolbar,
+.composer-actions,
+.reference-actions,
+.artifact-head,
+.artifact-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.panel-title-row,
+.artifact-section-head,
+.composer-toolbar,
+.artifact-head {
+  justify-content: space-between;
+}
+
+.panel-title-row h2,
+.artifact-section-head h2 {
+  font-family: var(--cp-font-display);
+  font-size: 1.35rem;
+  font-weight: 760;
+  margin: 0.15rem 0 0;
+}
+
+.form-grid,
+.constructor-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.form-submit {
+  justify-self: start;
+}
+
+.session-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.session-header {
+  align-items: start;
+  border-bottom: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-bottom: 1rem;
+}
+
+.session-title-block {
+  min-width: 0;
+}
+
+.session-title-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-display);
+  font-size: 2rem;
+  font-weight: 780;
+  line-height: 1.1;
+  margin-top: 0.25rem;
+  max-width: 100%;
+  outline: 0;
+  padding: 0.2rem 0.35rem;
+  width: min(44rem, 100%);
+}
+
+.session-title-input:focus {
+  background: var(--color-genost-panel-2);
+  border-color: var(--color-genost-cyan);
+}
+
+.session-subline {
+  color: var(--color-genost-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.session-header-controls {
+  align-items: end;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 5.5rem 8.5rem 13rem auto auto;
+}
+
+.field-group.compact {
+  font-size: 0.66rem;
+  gap: 0.25rem;
+}
+
+.tags-field {
+  min-width: 0;
+}
+
+.composer-panel {
+  background: color-mix(in oklab, var(--color-genost-panel) 86%, transparent);
+  border: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem;
+}
+
+.revision-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.revision-tab {
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-muted);
+  font-family: var(--cp-font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.55rem;
+}
+
+.revision-tab.active {
+  border-color: var(--color-genost-acid);
+  color: var(--color-genost-acid);
+}
+
+.prompt-input {
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-text);
+  min-height: 9rem;
+  outline: 0;
+  padding: 0.75rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.prompt-input:focus {
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.reference-panel {
+  border: 1px solid color-mix(in oklab, var(--color-genost-cyan) 35%, var(--color-genost-line));
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.65rem;
+}
+
+.reference-readout {
+  align-items: center;
+  color: var(--color-genost-muted);
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: auto minmax(10rem, auto) minmax(0, 1fr);
+}
+
+.reference-readout small,
+.path-readout {
+  color: var(--color-genost-muted);
+}
+
+.artifact-tree {
+  border-top: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 0.35rem;
+  max-height: 14rem;
+  overflow: auto;
+  padding-top: 0.55rem;
+}
+
+.artifact-tree button {
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-line);
+  color: var(--color-genost-text);
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+  min-height: 2.8rem;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+}
+
+.artifact-tree small {
+  color: var(--color-genost-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt-readout {
+  background: var(--cp-bg-sunken);
+  border-left: 2px solid var(--color-genost-acid);
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-mono);
+  font-size: 0.86rem;
+  padding: 0.75rem;
+}
+
+.artifact-section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.artifact-revision {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.revision-label {
+  align-items: baseline;
+  color: var(--color-genost-acid);
+  display: flex;
+  gap: 0.55rem;
+  font-family: var(--cp-font-display);
+  font-weight: 760;
+}
+
+.revision-label small {
+  color: var(--color-genost-muted);
+  font-family: var(--cp-font-mono);
+  font-size: 0.72rem;
+}
+
+.artifact-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+}
+
+.artifact-card {
+  background: color-mix(in oklab, var(--color-genost-panel-2) 78%, transparent);
+  border: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 0.65rem;
+  min-height: 13rem;
+  padding: 0.75rem;
+}
+
+.artifact-card.failed {
+  border-color: var(--color-genost-warn);
+}
+
+.artifact-name {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-genost-text);
+  font-weight: 760;
+  min-width: 0;
+  outline: 0;
+  width: min(16rem, 100%);
+}
+
+.artifact-name:focus {
+  border-color: var(--color-genost-cyan);
+}
+
+.artifact-meta {
+  color: var(--color-genost-muted);
+  display: grid;
+  font-size: 0.72rem;
+  gap: 0.15rem;
+}
+
+.artifact-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-waveform {
+  min-height: 4rem;
+}
+
+.artifact-card audio {
+  height: 2rem;
+  width: 100%;
+}
+
+.midi-preview-shell {
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-line);
+  height: 270px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.midi-preview-empty {
+  align-items: center;
+  border: 1px dashed var(--color-genost-line);
+  color: var(--color-genost-muted);
+  display: flex;
+  min-height: 5rem;
+  padding: 0.75rem;
+}
+
+.artifact-actions {
+  justify-content: flex-start;
+}
+
+.clip-resize-handle {
+  bottom: 0;
+  cursor: ew-resize;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  z-index: 6;
+}
+
+.clip-resize-handle.left {
+  left: 0;
+}
+
+.clip-resize-handle.right {
+  right: 0;
+}
+
+.clip-resize-handle::after {
+  background: color-mix(in oklab, var(--color-genost-text) 38%, transparent);
+  bottom: 11px;
+  content: "";
+  position: absolute;
+  top: 11px;
+  width: 1px;
+}
+
+.clip-resize-handle.left::after {
+  left: 4px;
+}
+
+.clip-resize-handle.right::after {
+  right: 4px;
+}
+
+.clip-resize-handle:hover::after {
+  background: var(--color-genost-acid);
+  box-shadow: 0 0 8px var(--color-genost-acid);
+}
+
+.timeline-drop-preview {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-acid) 26%, transparent);
+  border: 1px solid var(--color-genost-acid);
+  box-shadow:
+    var(--cp-glow-green),
+    inset 0 0 18px color-mix(in oklab, var(--color-genost-acid) 24%, transparent);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--color-genost-acid);
+  display: flex;
+  font-family: var(--cp-font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  height: 78px;
+  justify-content: center;
+  left: 0;
+  min-width: 44px;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  text-transform: uppercase;
+  top: 13px;
+  z-index: 4;
+}
+
+.timeline-new-lane {
+  min-height: 82px;
+}
+
+.timeline-new-lane .timeline-track {
+  min-height: 82px;
+}
+
+.timeline-new-lane .timeline-drop-preview {
+  top: 2px;
+}
+
+.timeline-empty {
+  align-items: center;
+  color: var(--color-genost-muted);
+  display: flex;
+  font-size: 0.8rem;
+  inset: 0 auto 0 0;
+  justify-content: flex-start;
+  pointer-events: none;
+  position: absolute;
+  padding-left: 0.9rem;
+  width: 16rem;
+}
+
+.mini-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  color: var(--color-genost-muted);
+  display: flex;
+  height: 1.65rem;
+  justify-content: center;
+  width: 1.65rem;
+}
+
+.mini-icon-button:hover {
+  border-color: var(--color-genost-danger);
+  box-shadow: var(--cp-glow-red);
+  color: var(--color-genost-danger);
+}
+
+.mini-icon-button.neutral:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+  color: var(--color-genost-cyan);
+}
+
+.clip-control-stack {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.clip-actions {
+  position: relative;
+}
+
+.clip-action-menu {
+  background: var(--cp-bg-sunken);
+  border: 1px solid var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+  color: var(--color-genost-text);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 12;
+}
+
+.clip-action-menu {
+  display: grid;
+  min-width: 7.75rem;
+  padding: 0.25rem;
+}
+
+.clip-action-menu button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-genost-text);
+  display: flex;
+  font-size: 0.76rem;
+  gap: 0.45rem;
+  justify-content: flex-start;
+  min-height: 1.95rem;
+  padding: 0 0.45rem;
+}
+
+.clip-action-menu button:hover {
+  border-color: var(--color-genost-cyan);
+  color: var(--color-genost-cyan);
+}
+
+.clip-action-menu button.danger {
+  color: var(--color-genost-danger);
+}
+
+.clip-action-menu button.danger:hover {
+  border-color: var(--color-genost-danger);
+  box-shadow: var(--cp-glow-red);
+}
+
+.clip-action-menu button:disabled {
+  box-shadow: none;
+}
+
+.queue-table {
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.queue-row {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-panel) 92%, var(--cp-bg-sunken));
+  border-top: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 92px minmax(160px, 1fr) 90px minmax(150px, 1fr) minmax(210px, 1fr) 130px 84px 238px;
+  min-height: 3.25rem;
+  padding: 0 0.8rem;
+}
+
+.queue-row:first-child {
+  border-top: 0;
+}
+
+.queue-header {
+  background: color-mix(in oklab, var(--color-genost-cyan) 10%, var(--color-genost-panel-2));
+  color: var(--color-genost-muted);
+  font-family: var(--cp-font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.queue-order {
+  color: var(--color-genost-acid);
+  font-family: var(--cp-font-mono);
+  font-weight: 800;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.sfx-section {
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  background: color-mix(in oklab, var(--cp-bg-sunken) 42%, transparent);
+  padding: 0.8rem;
+}
+
+.sfx-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.sfx-heading h2 {
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-display);
+  font-size: 1rem;
+  font-weight: 760;
+}
+
+.graph-warning {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-danger) 14%, transparent);
+  border: 1px solid var(--color-genost-danger);
+  border-radius: 0;
+  box-shadow: var(--cp-glow-red);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  color: var(--color-genost-danger);
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.graph-warning.offline {
+  background: color-mix(in oklab, var(--color-genost-warn) 12%, transparent);
+  border-color: var(--color-genost-warn);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--color-genost-warn) 38%, transparent);
+  color: var(--color-genost-warn);
+}
+
+.confirm-backdrop {
+  align-items: center;
+  background: color-mix(in oklab, var(--color-genost-base) 72%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 2rem;
+  position: fixed;
+  z-index: 80;
+}
+
+.confirm-dialog {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-danger) 8%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-danger);
+  box-shadow: var(--cp-glow-red);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  color: var(--color-genost-text);
+  display: grid;
+  gap: 1rem;
+  max-width: 34rem;
+  padding: 1rem;
+  width: min(34rem, calc(100vw - 4rem));
+}
+
+.confirm-dialog h2 {
+  color: var(--color-genost-text);
+  font-family: var(--cp-font-display);
+  font-size: 1.1rem;
+  font-weight: 760;
+  margin: 0 0 0.35rem;
+}
+
+.confirm-dialog p {
+  color: var(--color-genost-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.mode-gate {
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--color-genost-cyan) 12%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-genost-cyan) 10%, transparent) 1px, transparent 1px),
+    var(--color-genost-base);
+  background-size: 44px 44px;
+}
+
+.mode-choice {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-cyan) 6%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  color: var(--color-genost-text);
+  display: grid;
+  gap: 0.85rem;
+  min-height: 220px;
+  padding: 1.2rem;
+  text-align: left;
+}
+
+.mode-choice:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.mode-choice-icon {
+  align-items: center;
+  background: var(--color-genost-panel-2);
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--color-genost-warn);
+  display: flex;
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}
+
+.mode-choice-icon.active {
+  color: var(--color-genost-acid);
+  box-shadow: var(--cp-glow-green);
+}
+
+.mode-choice-title {
+  font-family: var(--cp-font-display);
+  font-size: 1.25rem;
+  font-weight: 760;
+}
+
+.mode-choice-copy {
+  color: var(--color-genost-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 28rem;
+}
+
+.graph-canvas {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.graph-node {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--color-genost-violet) 8%, var(--color-genost-panel-2)), var(--color-genost-panel));
+  border: 1px solid var(--color-genost-line);
+  border-radius: 0;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  min-height: 220px;
+  padding: 1rem;
+}
+
+.graph-node:hover {
+  border-color: var(--color-genost-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.graph-edge-row {
+  align-items: center;
+  background: var(--color-genost-panel);
+  border-top: 1px solid var(--color-genost-line);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 3rem;
+  padding: 0 0.8rem;
+}
+
+.graph-edge-row:first-child {
+  border-top: 0;
+}
+
+.graph-edge-header {
+  background: color-mix(in oklab, var(--color-genost-violet) 12%, var(--color-genost-panel-2));
+  color: var(--color-genost-muted);
+  font-family: var(--cp-font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}

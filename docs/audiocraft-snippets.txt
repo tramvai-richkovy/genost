@@ -1,0 +1,145 @@
+Here is a foundation script built on Meta's official audiocraft library. It includes an isolated function for each generation type (medium text generation, melody audio-conditioned generation, and audio continuation), automatically targets Apple Silicon GPU (mps), and includes example execution calls at the bottom.RequirementsInside your project's virtual environment (.venv), install audiocraft and torchaudio:Bashpip install audiocraft torchaudio
+Foundation Generator Script (generator.py)Pythonimport os
+from pathlib import Path
+import torch
+import torchaudio
+from audiocraft.models import MusicGen
+
+# Ensure models and caches target your external SSD
+# Replace '/Volumes/YourSSDName/models' with your actual SSD mount path
+SSD_PATH = "/Volumes/YourSSDName/models"
+os.environ["HF_HOME"] = SSD_PATH
+
+# Determine optimal device for Apple Silicon (MPS)
+DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
+
+
+def save_audio(audio_tensor: torch.Tensor, output_path: str, sample_rate: int = 32000):
+    """Saves output audio tensor to a WAV file."""
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # AudioCraft returns shape [batch, channels, samples] -> squeeze batch for saving
+    if audio_tensor.dim() == 3:
+        audio_tensor = audio_tensor.squeeze(0)
+        
+    torchaudio.save(str(output_file), audio_tensor.cpu(), sample_rate)
+    print(f" Saved: {output_file.resolve()}")
+
+
+def generate_text_stem(
+    prompt: str,
+    duration: int = 30,
+    model_name: str = "facebook/musicgen-medium",
+    output_path: str = "output/pad.wav"
+) -> torch.Tensor:
+    """
+    Generate audio from pure text prompt using MusicGen Medium.
+    Best for: Initial anchor pads, atmospheres, or unconstrained drum breaks.
+    """
+    print(f"\n[Text-to-Audio] Loading {model_name} on {DEVICE}...")
+    model = MusicGen.get_pretrained(model_name, device=DEVICE)
+    model.set_generation_params(duration=duration)
+
+    print(f"Generating ({duration}s): '{prompt}'")
+    wav = model.generate([prompt])
+    
+    save_audio(wav[0], output_path, model.sample_rate)
+    return wav[0]
+
+
+def generate_conditioned_stem(
+    prompt: str,
+    reference_audio_path: str,
+    duration: int = 30,
+    output_path: str = "output/bass.wav"
+) -> torch.Tensor:
+    """
+    Generate audio conditioned on a reference WAV file using MusicGen Melody.
+    Best for: Generating harmonically aligned stems (basslines, leads) that follow an existing pad.
+    """
+    model_name = "facebook/musicgen-melody"
+    print(f"\n[Melody-Conditioned] Loading {model_name} on {DEVICE}...")
+    model = MusicGen.get_pretrained(model_name, device=DEVICE)
+    model.set_generation_params(duration=duration)
+
+    # Load reference audio and match expected sampling rate
+    melody_wav, sr = torchaudio.load(reference_audio_path)
+    
+    print(f"Generating stem conditioned on '{reference_audio_path}'")
+    print(f"Prompt: '{prompt}'")
+    
+    wav = model.generate_with_chroma(
+        descriptions=[prompt],
+        melody_wav=melody_wav,
+        melody_sample_rate=sr
+    )
+
+    save_audio(wav[0], output_path, model.sample_rate)
+    return wav[0]
+
+
+def generate_continuation(
+    prompt: str,
+    source_audio_path: str,
+    duration: int = 30,
+    continuation_start: int = 15,
+    output_path: str = "output/continuation.wav"
+) -> torch.Tensor:
+    """
+    Extends an existing audio track seamlessly from a specific point.
+    Best for: Unrolling 30s clips into 60s+ continuous arrangements without hard cuts.
+    """
+    model_name = "facebook/musicgen-medium"
+    print(f"\n[Continuation] Loading {model_name} on {DEVICE}...")
+    model = MusicGen.get_pretrained(model_name, device=DEVICE)
+    model.set_generation_params(duration=duration)
+
+    # Load prompt audio slice
+    source_wav, sr = torchaudio.load(source_audio_path)
+    
+    print(f"Extending '{source_audio_path}' from {continuation_start}s offset...")
+    wav = model.generate_continuation(
+        prompt=source_wav,
+        prompt_sample_rate=sr,
+        descriptions=[prompt],
+        progress=True
+    )
+
+    save_audio(wav[0], output_path, model.sample_rate)
+    return wav[0]
+
+
+# =====================================================================
+# EXAMPLE USAGE: Building a 3-Stem Track Matrix
+# =====================================================================
+if __name__ == "__main__":
+    
+    # 1. Generate core anchor pad (MusicGen Medium)
+    anchor_prompt = "170 BPM, D minor, 90s intelligent jungle atmospheric pad, lush synthesizer, tape hiss warmth"
+    pad_tensor = generate_text_stem(
+        prompt=anchor_prompt,
+        duration=30,
+        model_name="facebook/musicgen-medium",
+        output_path="output/track_01/stem_01_pad.wav"
+    )
+
+    # 2. Generate matching bassline locked to the pad's melody (MusicGen Melody)
+    bass_prompt = "170 BPM, D minor, deep reese bass, analog sub warmth, low pass filter movement"
+    bass_tensor = generate_conditioned_stem(
+        prompt=bass_prompt,
+        reference_audio_path="output/track_01/stem_01_pad.wav",
+        duration=30,
+        output_path="output/track_01/stem_02_bass.wav"
+    )
+
+    # 3. Extend the anchor pad into a 60-second clip (Continuation)
+    pad_extension_prompt = "170 BPM, D minor, 90s intelligent jungle atmospheric pad, evolving pitch filter, lush chord progression"
+    extended_pad_tensor = generate_continuation(
+        prompt=pad_extension_prompt,
+        source_audio_path="output/track_01/stem_01_pad.wav",
+        duration=30,
+        continuation_start=15,
+        output_path="output/track_01/stem_01_pad_extended.wav"
+    )
+How to Hook This to Your Spec FilesWhen building your code agent workflow later:Parse your project spec file (JSON or YAML) to extract BPM, key, and prompt descriptions.Direct the agent to pass output file paths sequentially (e.g., passing output/stem_01_pad.wav into generate_conditioned_stem) so all subsequent stems derive pitch and timing directly from the anchor.

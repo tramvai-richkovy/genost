@@ -1,0 +1,75 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+**/.vscode/*
+!.vscode/extensions.json
+!**/.vscode/extensions.json
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Node / Vite
+node_modules/
+**/node_modules/
+dist/
+dist-ssr/
+**/dist/
+**/dist-ssr/
+*.tsbuildinfo
+
+# Tauri / Rust
+target/
+**/src-tauri/target/
+**/src-tauri/gen/schemas/
+
+# Python
+.venv/
+.venv-separator/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local model/cache data
+.cache/
+.huggingface/
+.audiocraft/
+model-cache/
+.audio-separator-models/
+apps/desktop/src-tauri/binaries/
+
+# GENOST local scratch output
+output/
+local-projects/
+.local-projects/
+GENOST_PROJECTS/
+*.tmp
+*.temp

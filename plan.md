@@ -14,7 +14,7 @@ Example `QnA` usage:
 
 ## Open Items
 
-- [ ] Import the POC from `../games/music` as the starting point for this repository, while leaving the original POC untouched as an archive.
+- [x] Import the POC from `../games/music` as the starting point for this repository, while leaving the original POC untouched as an archive.
   - Preserve the POC's Tauri v2 desktop shell, React/TypeScript/Vite stack, Tailwind styling approach, lucide icons, theme handling, folder-picker behavior, worker launch assumptions, and local-first persistence.
   - Preserve the parts that already feel comfortable: project browser layout density, dark studio feel, explicit user actions, render job status, audio preview patterns, separation/premix workflow, and command journaling.
   - Rename concepts in the copied code only where the new session/artifact model requires it; avoid a ground-up rewrite of working infrastructure.
@@ -105,6 +105,12 @@ Example `QnA` usage:
   - Add worker unit tests for model preflight, MIDI-to-guide WAV rendering, request validation, derived-session pipeline orchestration, and error mapping.
   - Add model-free fixture tests where real MusicGen/text2midi/basic-pitch/omnizart dependencies are unavailable.
   - Run `npm test`, `npm run build`, and the Python worker test suite before considering implementation complete.
+- [ ] Finish first-pass implementation hardening after the interrupted work session.
+  - Re-run `npm test` and `npm run build` after the last cleanup patches and fix any new failures before checking off frontend/session implementation items.
+  - Run the full Python worker test suite inside a proper `.venv` with worker dependencies installed; the base shell was missing `fastapi`, `torch`, and `soundfile`, so only the model-free subset was verified.
+  - Smoke test the Tauri app with a real working directory and model cache: folder picker, strict preflight gate, collapsible sidebar, session creation/opening, prompt archival, artifact previews, export/reveal, conversion, separation, merge, and derived-session actions.
+  - Review the changes using the code-review guidance from `../games/music/AGENTS.md`, put findings before summary, and fix any high/medium-severity findings.
+  - Add a QnA item and pause if that review finds a conflict between the implementation and the suggested fixes in this plan.
 - [ ] Update developer docs.
   - Document local setup for required MusicGen medium and melody models, `amaai-lab/text2midi`, WaveRoll, `pretty_midi`, `scipy`, `basic-pitch`, `omnizart`, and Demucs.
   - Document the new workspace/session/artifact JSON format and command journal.
