@@ -20,12 +20,21 @@ class ModelAvailabilityResponse(BaseModel):
     download_hint: str
 
 
+class ActionCapabilityResponse(BaseModel):
+    available: bool
+    detail: str
+    error: str | None = None
+    setup_hint: str | None = None
+
+
 class ModelPreflightResponse(BaseModel):
     ok: bool
     backend: str
     device: str
     cache_paths: list[str] = Field(default_factory=list)
     models: dict[str, ModelAvailabilityResponse] = Field(default_factory=dict)
+    cache_writable: bool = False
+    capabilities: dict[str, ActionCapabilityResponse] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
 
 
@@ -147,11 +156,15 @@ class TextToMidiRequest(BaseModel):
 class MidiOutputResponse(BaseModel):
     file_name: str
     file_path: str
+    seed: int | None = None
 
 
 class TextToMidiResponse(BaseModel):
     status: Literal["ready", "failed"]
     outputs: list[MidiOutputResponse] = Field(default_factory=list)
+    model: str | None = None
+    model_version: str | None = None
+    generation_seconds: float | None = None
     error_code: str | None = None
     error: str | None = None
 

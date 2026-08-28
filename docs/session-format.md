@@ -1,6 +1,6 @@
 # GENOST Session Format
 
-This is the provisional persistence contract for the sessions/artifacts product. Root `plan.md` must finalize and test it before it is treated as implemented.
+This is the implemented persistence contract for the sessions/artifacts product.
 
 ```text
 WorkingDirectory/
@@ -9,7 +9,7 @@ WorkingDirectory/
 `-- se-YYMMDD-N/
     |-- session.json
     |-- commands.json
-    |-- artifacts/
+    |-- artifacts/        # imported/session-owned references
     |-- archive-1/
     |-- archive-2/
     `-- jobs/
@@ -19,4 +19,6 @@ WorkingDirectory/
 
 Every produced artifact has a stable ID, display name, kind, media type, relative file path, status, prompt revision, parent/source relationships, export state, conversion/generation metadata, timestamps, and a sidecar beside the produced file.
 
-Prompt revisions own immutable artifact folders. Archiving never renames a prior folder. Manual external references are copied into the session before use. Generated, converted, separated, or merged files are never overwritten by retries.
+New sessions allocate `archive-1` to their first prompt revision, then use collision-safe `archive-N` folders. The active revision is displayed as `current`; archiving assigns its immutable folder label and creates the next editable folder without renaming anything. Legacy sessions whose first revision used `artifacts` remain readable and allocate a new non-colliding archive folder.
+
+The general `artifacts/` folder owns manually imported references. Generated audio/MIDI, guide WAVs, conversions, separation outputs, and merges remain in the prompt revision that produced them. Every produced artifact has a JSON sidecar containing exact prompt/model/backend/device/seed/settings/timings where applicable plus source lineage. Retries publish new identities and files.

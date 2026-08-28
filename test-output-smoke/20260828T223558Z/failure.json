@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "failedIndex": 1,
+  "seed": 100,
+  "errorType": "GeneratorError",
+  "error": "Failed to load MLX MusicGen model facebook/musicgen-medium: \nT5Tokenizer requires the SentencePiece library but it was not found in your environment. Check out the instructions on the\ninstallation page of its repo: https://github.com/google/sentencepiece#installation and follow the ones\nthat match your environment. Please note that you may need to restart your runtime after installation.\n",
+  "createdAt": "2026-08-28T22:36:04.930247Z"
+}

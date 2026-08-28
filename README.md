@@ -4,7 +4,7 @@ GENOST is a local-first macOS session studio for AI-assisted music generation. I
 
 Root [idea.md](idea.md) is the authoritative product specification and root [plan.md](plan.md) is the only active implementation plan. The song-project DAW described by [docs/original-idea.md](docs/original-idea.md) and currently present in parts of the source tree is proof-of-concept infrastructure, not the product.
 
-Status: the recoverable Session Studio snapshot exists in Git commit `780f22c`, but the current entrypoint still reflects the mistaken song-project cutover. Follow `plan.md` for the selective restoration and completion work; do not treat the current desktop shell as product-complete.
+Status: Session Studio is the sole desktop entrypoint. The restored implementation now includes portable workspace/session persistence, strict two-model gating, isolated optional capabilities, immutable prompt revisions, artifact provenance and sidecars, non-destructive retry/cancel flows, MIDI/audio-derived pipelines, and the headless acceptance CLI. Real-model walkthrough and unsigned packaging still require the configured local models and worker environment.
 
 ## Workflow
 
@@ -51,23 +51,29 @@ Native folder selection, local persistence, reveal, and export require Tauri.
 
 ## Verification
 
+Deterministic repository verification:
+
 ```bash
-cd apps/desktop
-npm test
-npm run build
+just verify
 ```
 
-Python worker tests require the worker dependency environment from `genost_worker/requirements.txt`. The checked Apple Silicon `.venv` uses Python 3.10.17; Basic Pitch conversion must still pass its planned capability smoke test before being treated as ready:
+Python worker tests require the worker dependency environment from `genost_worker/requirements.txt`. The checked Apple Silicon `.venv` uses Python 3.10.17 with the pinned Torch/Transformers and Basic Pitch ONNX stack:
 
 ```bash
 python3 -m uv venv --python 3.10 .venv
-python3 -m uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cpu "torch>=2.1,<3" "torchaudio>=2.1,<3" "torchcodec>=0.1"
 python3 -m uv pip install --python .venv/bin/python -r genost_worker/requirements.txt
 .venv/bin/python -m unittest discover -s genost_worker/tests
+.venv/bin/python scripts/check-basic-pitch.py
 ```
 
 `omnizart` is optional for drum audio-to-MIDI conversion and is kept outside the base worker requirements. Install `genost_worker/requirements-omnizart.txt` only on machines with the needed system audio headers.
 
-The planned real-model CLI acceptance command is `just test`: it will read [test_prompt.md](test_prompt.md) and produce five MusicGen Medium composition variations. Until that checklist item is implemented, use the existing frontend/worker verification commands above.
+The intentional real-model acceptance command is:
+
+```bash
+just test
+```
+
+It preflights local `facebook/musicgen-medium`, reads [test_prompt.md](test_prompt.md), and publishes exactly five independent, seeded variations with sidecars and a batch manifest under `test-output/`. It never downloads weights or overwrites an older batch.
 
 See [docs/macos-setup.md](docs/macos-setup.md) and [plan.md](plan.md).

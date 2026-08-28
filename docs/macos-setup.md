@@ -87,6 +87,8 @@ python -m pip install -r requirements-mac.txt
 export GENOST_TEXT2MIDI_REPO="$HOME/src/Text2midi"
 ```
 
+Text2midi runs in a managed long-lived subprocess. The model, REMI tokenizer, and FLAN tokenizer are loaded once and reused for all results in a requested batch. Hugging Face loads use `local_files_only=True`; preflight disables the action when the local checkout is not configured. Set `GENOST_TEXT2MIDI_MODEL_VERSION` when the checkout is not a Git worktree and exact version labeling is required.
+
 The worker can also use a custom command template:
 
 ```bash
@@ -99,24 +101,20 @@ MIDI-to-guide-WAV rendering uses:
 python -m pip install pretty_midi scipy numpy
 ```
 
-Melodic audio-to-MIDI conversion uses:
+Melodic audio-to-MIDI conversion uses the requirements-pinned Basic Pitch ONNX runtime in an isolated process, preventing its CoreML/Torch imports from remaining resident beside MusicGen. Verify it with:
 
 ```bash
-python -m pip install basic-pitch
+python scripts/check-basic-pitch.py
 ```
 
-Drum audio-to-MIDI conversion uses:
+Drum audio-to-MIDI conversion uses Omnizart only when a compatible runtime is verified:
 
 ```bash
 python -m pip install omnizart
 omnizart download-checkpoints
 ```
 
-Optional cleanup before melody extraction can use Demucs:
-
-```bash
-python -m pip install demucs
-```
+Omnizart remains disabled on ARM macOS because the official project documents that runtime as incompatible. Its absence does not block sessions or melodic MIDI conversion.
 
 ## Separation And Merge
 
@@ -136,22 +134,19 @@ python scripts/smoke-test-separation.py --model-cache-path "$AUDIO_SEPARATOR_MOD
 
 ## Verification
 
-Frontend:
+Deterministic frontend, worker, and Rust checks:
 
 ```bash
-cd apps/desktop
-npm test
-npm run build
+just verify
 ```
 
-Python:
+Real MusicGen acceptance:
 
 ```bash
-source .venv/bin/activate
-python -m unittest discover -s genost_worker/tests
+just test
 ```
 
-Real generation, Text2MIDI, basic-pitch, omnizart, and Demucs checks require their local models and checkpoints. Model-free tests should continue to pass without downloading MusicGen.
+This reads root `test_prompt.md` and produces exactly five MusicGen Medium WAVs under a new timestamped `test-output/` batch. Real generation, Text2midi, Basic Pitch, separation, and Omnizart checks require their local models and checkpoints. Model-free tests never download weights.
 
 ## License Posture
 

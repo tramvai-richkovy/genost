@@ -94,6 +94,16 @@ export type WorkerHealth = {
         download_hint: string;
       }
     >;
+    cache_writable: boolean;
+    capabilities: Record<
+      string,
+      {
+        available: boolean;
+        detail: string;
+        error: string | null;
+        setup_hint: string | null;
+      }
+    >;
     errors: string[];
   };
 };
@@ -230,7 +240,10 @@ export async function cancelWorkerJob(jobId: string): Promise<WorkerJobStatus | 
 
 export type TextToMidiResponse = {
   status: "ready" | "failed";
-  outputs: Array<{ file_name: string; file_path: string }>;
+  outputs: Array<{ file_name: string; file_path: string; seed: number | null }>;
+  model: string | null;
+  model_version: string | null;
+  generation_seconds: number | null;
   error_code: string | null;
   error: string | null;
 };

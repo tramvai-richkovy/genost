@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import os
 import threading
 import time
@@ -38,4 +39,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     raise SystemExit(main())

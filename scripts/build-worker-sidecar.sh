@@ -25,6 +25,7 @@ mkdir -p "$OUTPUT_DIR"
   --paths "$ROOT_DIR" \
   --hidden-import genost_worker.api \
   --hidden-import genost_worker.audiocraft_generator \
+  --add-data "$ROOT_DIR/genost_worker/text2midi_service.py:genost_worker" \
   --collect-all hf_xet \
   --collect-all mlx \
   --collect-all mlx_audiocraft \

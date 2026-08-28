@@ -171,6 +171,7 @@ def _load_mlx_model(model_name: str):
         return _MLX_MODEL_CACHE[model_name]
 
     try:
+        _prepare_mlx_loader()
         from mlx_audiocraft import MusicGen
     except Exception as exc:  # pragma: no cover - depends on Apple Silicon setup
         raise GeneratorError(f"MLX AudioCraft is not available: {exc}") from exc
@@ -181,6 +182,57 @@ def _load_mlx_model(model_name: str):
         raise GeneratorError(f"Failed to load MLX MusicGen model {model_name}: {exc}") from exc
     _MLX_MODEL_CACHE[model_name] = model
     return model
+
+
+def _prepare_mlx_loader() -> None:
+    """Keep MLX checkpoint conversion within a 16 GB Apple Silicon budget."""
+    import numpy as np
+    import torch
+    from huggingface_hub import hf_hub_download
+    from mlx_audiocraft.models import loaders
+    from mlx_audiocraft.utils import weight_convert
+
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+    def load_local_state_dict(file_or_repo, filename=None, cache_dir=None):
+        candidate = Path(str(file_or_repo)).expanduser()
+        if candidate.is_dir():
+            if not filename:
+                raise GeneratorError(f"Checkpoint filename is required for {candidate}")
+            checkpoint = candidate / filename
+        elif candidate.is_file():
+            checkpoint = candidate
+        elif str(file_or_repo).startswith("https://"):
+            raise GeneratorError("MLX checkpoint URLs are disabled; configure a local model cache.")
+        else:
+            if not filename:
+                raise GeneratorError(f"Checkpoint filename is required for {file_or_repo}")
+            checkpoint = Path(
+                hf_hub_download(
+                    repo_id=str(file_or_repo),
+                    filename=filename,
+                    cache_dir=cache_dir,
+                    local_files_only=True,
+                )
+            )
+        try:
+            return torch.load(checkpoint, map_location="cpu", weights_only=False, mmap=True)
+        except TypeError:
+            return torch.load(checkpoint, map_location="cpu", weights_only=False)
+
+    def preserve_checkpoint_dtype(state_dict, dtype=np.float32):
+        del dtype
+        converted = {}
+        for key, value in state_dict.items():
+            if hasattr(value, "detach"):
+                converted[key] = value.detach().cpu().numpy()
+            elif isinstance(value, np.ndarray):
+                converted[key] = value
+        return converted
+
+    loaders._get_state_dict = load_local_state_dict
+    weight_convert.to_numpy = preserve_checkpoint_dtype
 
 
 def clear_model_cache() -> None:

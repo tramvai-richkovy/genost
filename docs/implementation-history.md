@@ -2,6 +2,17 @@
 
 This file preserves historical implementation work. Active work lives only in root `plan.md`; root `idea.md` is the product specification.
 
+## Session Studio Restoration And Hardening — 2026-08-29
+
+- Selectively restored the Session Studio schema, storage, store, UI, tests, WaveRoll dependency, and styles from `780f22c` while retaining the newer worker, separation, Tauri, validation, and packaging code.
+- Mounted Session Studio as the sole product entrypoint and added a production-bundle assertion that rejects song-project shell markers.
+- Added isolated session scanning, serialized/atomic journals, portable manual reference imports, immutable collision-safe prompt folders, selectable read-only archives, correct Stem Constructor locking, and exact artifact provenance sidecars.
+- Added automatic/stale-safe preflight with action-level Text2midi, guide-WAV, Basic Pitch, separator, ffmpeg merge, and Omnizart readiness; optional tools no longer affect the two-model product gate.
+- Replaced per-result Text2midi launches with a local-only long-lived batch service, added the typed WaveRoll wrapper, and recorded Text2midi seeds/version/timing metadata.
+- Completed non-destructive artifact retry/cancel/progress and restart/missing-file reconciliation, hierarchical references, audio drum-removal before melodic extraction, retained intermediate lineage, and materialized derived-session source audio.
+- Added the headless five-variation MusicGen Medium acceptance CLI behind `just test` and moved deterministic checks to `just verify`.
+- Verified 106 desktop tests with 7 intentional skips, the TypeScript/Vite production build and product-shell assertion, focused model-free worker tests, Rust formatting, and Rust compilation. Full worker verification, real `just test`, and unsigned packaging were unavailable because this checkout did not contain the required `.venv`, local models, or built worker sidecar.
+
 ## Product Direction Correction — 2026-08-29
 
 - The sessions/artifacts product in root `idea.md` is authoritative.

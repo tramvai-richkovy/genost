@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "status": "running",
+  "createdAt": "2026-08-28T22:30:06.022412Z",
+  "promptFile": "/Volumes/T7/projects/genost/test_prompt.md",
+  "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
+  "promptHash": "aa5bbddaa3fab8b3da6c0f3f271da63782f336753082d8907e633148158e2484",
+  "model": "facebook/musicgen-medium",
+  "quantity": 5,
+  "durationSeconds": 25,
+  "backendRequested": "auto",
+  "modelCachePath": null,
+  "hfHome": null,
+  "preflight": {
+    "ok": true,
+    "backend": "mlx",
+    "device": "metal",
+    "cache_paths": [
+      "/Volumes/T7/ai_models/huggingface",
+      "/Users/andriinikitin/.cache/huggingface"
+    ],
+    "models": {
+      "facebook/musicgen-medium": {
+        "name": "facebook/musicgen-medium",
+        "available": true,
+        "cache_paths": [
+          "/Volumes/T7/ai_models/huggingface/hub/models--facebook--musicgen-medium",
+          "/Volumes/T7/ai_models/huggingface/models--facebook--musicgen-medium"
+        ],
+        "error": null,
+        "download_hint": "huggingface-cli download facebook/musicgen-medium --cache-dir <GENOST model cache>"
+      },
+      "facebook/musicgen-melody": {
+        "name": "facebook/musicgen-melody",
+        "available": true,
+        "cache_paths": [
+          "/Volumes/T7/ai_models/huggingface/hub/models--facebook--musicgen-melody",
+          "/Volumes/T7/ai_models/huggingface/models--facebook--musicgen-melody"
+        ],
+        "error": null,
+        "download_hint": "huggingface-cli download facebook/musicgen-melody --cache-dir <GENOST model cache>"
+      }
+    },
+    "cache_writable": true,
+    "capabilities": {
+      "text2midi": {
+        "available": false,
+        "detail": "GENOST_TEXT2MIDI_REPO or GENOST_TEXT2MIDI_COMMAND is not configured",
+        "error": "GENOST_TEXT2MIDI_REPO or GENOST_TEXT2MIDI_COMMAND is not configured",
+        "setup_hint": "Configure a local AMAAI-Lab/Text2midi checkout."
+      },
+      "midi_guide": {
+        "available": true,
+        "detail": "numpy, pretty_midi, and scipy are available",
+        "error": null,
+        "setup_hint": null
+      },
+      "basic_pitch": {
+        "available": false,
+        "detail": "Basic Pitch model asset is missing: /Volumes/T7/projects/genost/.venv/lib/python3.10/site-packages/basic_pitch/saved_models/icassp_2022/nmp.mlpackage",
+        "error": "Basic Pitch model asset is missing: /Volumes/T7/projects/genost/.venv/lib/python3.10/site-packages/basic_pitch/saved_models/icassp_2022/nmp.mlpackage",
+        "setup_hint": "Install the pinned Basic Pitch worker dependencies and run the local smoke test."
+      },
+      "separator": {
+        "available": false,
+        "detail": "audio-separator executable: /Volumes/T7/projects/genost/.venv-separator/bin/audio-separator",
+        "error": "audio-separator executable: /Volumes/T7/projects/genost/.venv-separator/bin/audio-separator",
+        "setup_hint": "Run scripts/setup-audio-separator.sh."
+      },
+      "merge": {
+        "available": true,
+        "detail": "ffmpeg is available",
+        "error": null,
+        "setup_hint": null
+      },
+      "omnizart": {
+        "available": false,
+        "detail": "Omnizart is disabled on ARM macOS because its official runtime is incompatible",
+        "error": "Omnizart is disabled on ARM macOS because its official runtime is incompatible",
+        "setup_hint": "Use a verified compatible Omnizart runtime; it remains optional."
+      }
+    },
+    "errors": []
+  },
+  "variations": []
+}

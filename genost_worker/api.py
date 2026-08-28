@@ -8,6 +8,7 @@ from dataclasses import asdict
 from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
+from time import monotonic
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +21,7 @@ from .audiocraft_generator import (
     get_device,
 )
 from .jobs import jobs
-from .midi import MidiWorkflowError, audio_to_midi, generate_text_midi, midi_to_clean_guide_wav
+from .midi import MidiWorkflowError, audio_to_midi, generate_text_midi, midi_to_clean_guide_wav, text2midi_model_version
 from .model_preflight import check_model_preflight
 from .schemas import (
     AudioToMidiRequest,
@@ -294,6 +295,7 @@ def separation_merge(request: SeparationMergeRequest) -> SeparationMergeResponse
 @app.post("/midi/text", response_model=TextToMidiResponse)
 def text_to_midi(request: TextToMidiRequest) -> TextToMidiResponse:
     try:
+        started = monotonic()
         outputs = generate_text_midi(
             prompt=request.prompt,
             output_directory=request.output_directory,
@@ -301,7 +303,13 @@ def text_to_midi(request: TextToMidiRequest) -> TextToMidiResponse:
             model_repo_path=request.model_repo_path,
             python_executable=request.python_executable,
         )
-        return TextToMidiResponse(status="ready", outputs=[asdict(output) for output in outputs])
+        return TextToMidiResponse(
+            status="ready",
+            outputs=[asdict(output) for output in outputs],
+            model="amaai-lab/text2midi",
+            model_version=text2midi_model_version(request.model_repo_path),
+            generation_seconds=monotonic() - started,
+        )
     except Exception as exc:
         return TextToMidiResponse(status="failed", error_code=_midi_error_code(exc), error=str(exc))
 
