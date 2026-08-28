@@ -3,8 +3,8 @@ set shell := ["bash", "-cu"]
 build:
     cd apps/desktop && npm run build
 
-run: build
-    cd apps/desktop && npm run tauri:dev
+run:
+    ./scripts/dev.sh
 
 smtv path_flag="" path="":
     [[ {{ quote(path_flag) }} == "--path" && -n {{ quote(path) }} ]] || (printf '%s\n' "error: usage is just smtv --path <output-dir>" >&2; exit 64)

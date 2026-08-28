@@ -1,128 +1,200 @@
-# GENOST POC-Based Session Studio Plan
+# GENOST Sessions And Artifacts Implementation Plan
 
-## HOWTO
+## Authority And Scope
 
-Keep implementation work in `Open Items` as a checkbox list. Check items as they are completed, add new items when new required work appears, and remove the plan file once all items are complete and there are no unresolved questions.
-Put any blocking or review-needed questions in `QnA`; add your suggested answers. If a question is answered, fold the answer back into `Open Items` as concrete work or a concrete decision, then remove the answered question. Do not delete the plan file while `QnA` still has unresolved questions. If all QnA items are resolved and there are still some Open Items - start implementing those items; if some questions arise during the implementation so you're blocked with the solution of a current open item - pause the execution and ask user to answer them.
-Example `Open Items` usage:
-- [ ] Add a focused regression test for the failing scenario.
-- [ ] Implement the smallest code change that satisfies the test.
-- [x] Confirm the relevant helper already handles empty input.
-Example `QnA` usage:
-- [ ] Should the migration backfill old rows or only affect new rows?
-  - Suggested answer: backfill old rows if the user-facing UI depends on consistent historical data.
+- `idea.md` at the repository root is the authoritative product specification.
+- This `plan.md` is the only active implementation checklist.
+- `AGENTS.md` contains maintenance rules derived from `idea.md` and this plan.
+- `docs/original-idea.md` describes the older song-project DAW proof of concept. It is reference material, not the product specification.
+- `../games/music` is the untouched archival POC. The song-project code currently present in this repository is reusable infrastructure, not an alternate product shell.
+- Historical plans are read-only records under `docs/archive/`.
 
-## Open Items
+GENOST is a local-first macOS session studio. The primary units are a selected working directory, sessions, prompt revisions, and artifacts. The three session types are Stem Constructor, Free Format, and Midi Generator. The app must not allow session creation or opening until both `facebook/musicgen-medium` and `facebook/musicgen-melody` are available locally.
 
-- [x] Import the POC from `../games/music` as the starting point for this repository, while leaving the original POC untouched as an archive.
-  - Preserve the POC's Tauri v2 desktop shell, React/TypeScript/Vite stack, Tailwind styling approach, lucide icons, theme handling, folder-picker behavior, worker launch assumptions, and local-first persistence.
-  - Preserve the parts that already feel comfortable: project browser layout density, dark studio feel, explicit user actions, render job status, audio preview patterns, separation/premix workflow, and command journaling.
-  - Rename concepts in the copied code only where the new session/artifact model requires it; avoid a ground-up rewrite of working infrastructure.
-- [ ] Reframe the POC product model from song projects/blocks/arranger into working-directory sessions and artifacts.
-  - Replace "project" as the main user unit with "session".
-  - Keep a selected working directory as the root of all persisted state.
-  - Store workspace metadata with schema version, updated timestamp, known tags, last selected session, remembered sidebar state, and model/cache settings.
-  - Store each session in a portable folder with a session JSON file, append-only command journal, artifact directories, archive directories, and stable relative asset paths.
-  - Keep all active artifacts for one session in the same session folder.
-  - When archiving a prompt/state, do not rename existing artifact folders; allocate new folders with numeric suffixes such as `archive-1`, `archive-2`, etc.
-- [ ] Design the new session schema and migrate POC storage helpers to it.
-  - Support session types `stem_constructor`, `free_format`, and `midi_generator`.
-  - Store mandatory free-form session name, display title, BPM, type, created/updated timestamps, artifact count, optional tags, optional export folder, prompt history tabs, active prompt revision, and lineage to source artifacts/sessions.
-  - Add BPM presets for rock, downtempo, ambient, dnb, jungle, techno, house, and a custom numeric value, defaulting to 120 BPM.
-  - Keep atomic JSON writes, strict Zod parsing, command journals, relative asset paths, and scan/load/save patterns from the POC.
-  - Add command entries for workspace selection, session creation/opening, BPM changes, tag changes, export-folder changes, prompt archival, generation requests, artifact rename, export, reveal, conversion, separation, merge, and derived-session creation.
-- [ ] Define artifact schema and filesystem conventions.
-  - Support audio clips, separated audio stems, MIDI clips, guide-audio clips, premix/merge audio, and conversion outputs.
-  - Store artifact id, name, kind, media type, file name/path, parent artifact id, source session id, prompt revision id, model/backend metadata, conversion metadata, status, timestamps, and export status.
-  - Use default names like `artifact1`, `artifact2`, `artifact3`, while allowing rename.
-  - Provide artifact actions: reveal location, export to session export folder, convert audio to melodic MIDI, convert audio to drum MIDI, split audio into stems, adjust stem volumes, merge selected stems, and start a derived session.
-- [ ] Add strict model availability gating.
-  - The app must not enter the usable studio flow unless both `facebook/musicgen-medium` and `facebook/musicgen-melody` are available locally.
-  - Keep a setup/model gate screen that can show missing dependencies and allow selecting the working directory/cache path, but block session creation, opening, and generation until preflight passes.
-  - Extend worker health/preflight to report exact medium/melody model availability, backend, device, cache paths, and actionable missing dependency/model errors.
-  - Hide POC offline/fixture generation from product flow; keep fixture paths only for tests.
-  - Ensure text-only generation uses the medium model and reference/melody-conditioned generation uses the melody model.
-- [ ] Adapt the POC Python worker for the new workflows.
-  - Keep FastAPI, async render jobs, job polling/cancelation, MusicGen wrapper, backend selection, cache handling, audio validation, separation, and merge code.
-  - Add text-to-audio generation for Free Format without reference audio using `facebook/musicgen-medium`.
-  - Add melody-conditioned generation for Free Format with reference audio, Stem Constructor, MIDI-derived sessions, and audio-derived sessions using `facebook/musicgen-melody`.
-  - Add MIDI generation with local `amaai-lab/text2midi`, taking a prompt and quantity.
-  - Add MIDI-to-clean-guide-WAV conversion using `pretty_midi`, `numpy`, and `scipy.io.wavfile`, based on Appendix 1 in `idea.md`.
-  - Add melodic audio-to-MIDI conversion using Spotify `basic-pitch`.
-  - Add drum audio-to-MIDI conversion using `omnizart drum transcribe`.
-  - Add optional Demucs preprocessing for cleaner melody extraction from dirty MusicGen audio before audio-to-MIDI conversion.
-- [ ] Adapt the POC frontend shell instead of replacing it wholesale.
-  - First screen selects the working directory and model/cache readiness.
-  - After selecting a directory, show a wide ChatGPT-like session sidebar with previous sessions, search, tag filters, session name/title, and artifact count.
-  - Make the sidebar collapsible with a standard hamburger button and persist collapsed state.
-  - Keep the main area usable with no active session by showing three new-session choices.
-  - Reuse the POC's polished studio styling and interaction density, updated to match session/artifact language.
-- [ ] Build the new-session creation flow.
-  - Show three central choices: Stem Constructor, Free Format, and Midi Generator.
-  - Render each choice with a large title treatment, an emoji marker, and explanatory paragraph text.
-  - On choice selection, create a session after collecting free-form name, BPM/preset, optional tag, and optional export folder.
-  - Allow new tag creation from text input and existing tag selection from a dropdown.
-- [ ] Build the MIDI Generator session.
-  - Provide prompt input and quantity of MIDI stems to generate.
-  - After a generation run, lock that prompt revision.
-  - Add a `+` prompt archival control that moves current contents into `archive-1`, `archive-2`, etc. for later viewing and starts a fresh editable prompt with the previous prompt text retained.
-  - Visualize each generated MIDI result with WaveRoll or a confirmed equivalent.
-  - Allow each MIDI artifact to start a Free Format or Stem Constructor flow by rendering a clean guide WAV and feeding it to MusicGen Melody.
-- [ ] Build the Free Format session.
-  - Provide prompt input, quantity of audio clips to generate, BPM controls, tag controls, and export-folder controls.
-  - Provide optional reference audio from manual file selection, a linked artifact from another session, or a tree browser over all session artifacts such as `session1/archive-3/artifact15.wav`.
-  - Use MusicGen Medium when no reference audio is selected.
-  - Use MusicGen Melody when reference audio is selected.
-  - Show generated audio artifacts with rename, preview, reveal, export, split-to-stems, convert-to-melodic-MIDI, convert-to-drum-MIDI, and start-session-from-melody actions.
-  - Reuse the POC separation/premix UX for splitting stems, per-stem volume knobs, and merge publishing.
-  - Support prompt archival with stable old artifact folders and new suffixed folders.
-- [ ] Build the Stem Constructor session.
-  - Provide a restricted constructor list for arpeggio, bass, drums, pad, lead, keys, solo guitar, choir parts, game/movie scene, game boss battle theme, and game regular encounter.
-  - Limit each constructor to 4 or 5 high-value attributes.
-  - Let users choose existing values or type custom values for each attribute.
-  - Generate careful prompts from structured fields, with output like `170 BPM, D minor, atmospheric pad, lush synthesizer, 90s intelligent jungle, clean mix`.
-  - Allow quantity selection and generation of multiple candidate audio artifacts.
-  - Reuse Free Format artifact actions and prompt archival behavior.
-- [ ] Implement derived-session workflows.
-  - From a MIDI artifact, create guide audio with Appendix 1, generate audio in the current session with MusicGen Melody, then create a named derived Free Format or Stem Constructor session linked to that generated audio.
-  - From an audio artifact, label the action `Start session from this melody`.
-  - For audio-derived sessions, strip drums/separate as needed, convert the clean melody to MIDI, synthesize a clean sine guide WAV, then feed that guide to MusicGen Melody.
-  - Generate stable names for derived sessions from source session, artifact name, action type, and a collision-safe suffix.
-- [ ] Implement export and reveal behavior.
-  - Let each session store an export folder chosen through the desktop folder picker.
-  - Copy selected artifacts to the export folder on export, preserving extension and allocating collision-safe names.
-  - Use Tauri opener APIs to reveal artifact locations for local files.
-  - Show clear disabled/error states when an artifact is missing, not ready, or has no export folder.
-- [ ] Add audio and MIDI previews.
-  - Reuse existing POC audio preview and separation-loop preview where possible.
-  - Add MIDI visualization for generated MIDI artifacts.
-  - Add MIDI guide-audio preview where useful for MusicGen Melody handoff.
-- [ ] Add tests and verification.
-  - Add schema tests for workspace, session, artifact, prompt archive, command journal, and migration behavior.
-  - Add storage tests for session scan/search/tag counts, atomic writes, folder suffix allocation, export copying, and relative path resolution.
-  - Add prompt builder tests for every Stem Constructor template.
-  - Add frontend tests for workspace selection states, session sidebar search/filter/collapse, session creation, prompt archival, artifact actions, and model gate behavior.
-  - Add worker unit tests for model preflight, MIDI-to-guide WAV rendering, request validation, derived-session pipeline orchestration, and error mapping.
-  - Add model-free fixture tests where real MusicGen/text2midi/basic-pitch/omnizart dependencies are unavailable.
-  - Run `npm test`, `npm run build`, and the Python worker test suite before considering implementation complete.
-- [ ] Finish first-pass implementation hardening after the interrupted work session.
-  - Re-run `npm test` and `npm run build` after the last cleanup patches and fix any new failures before checking off frontend/session implementation items.
-  - Run the full Python worker test suite inside a proper `.venv` with worker dependencies installed; the base shell was missing `fastapi`, `torch`, and `soundfile`, so only the model-free subset was verified.
-  - Smoke test the Tauri app with a real working directory and model cache: folder picker, strict preflight gate, collapsible sidebar, session creation/opening, prompt archival, artifact previews, export/reveal, conversion, separation, merge, and derived-session actions.
-  - Review the changes using the code-review guidance from `../games/music/AGENTS.md`, put findings before summary, and fix any high/medium-severity findings.
-  - Add a QnA item and pause if that review finds a conflict between the implementation and the suggested fixes in this plan.
-- [ ] Update developer docs.
-  - Document local setup for required MusicGen medium and melody models, `amaai-lab/text2midi`, WaveRoll, `pretty_midi`, `scipy`, `basic-pitch`, `omnizart`, and Demucs.
-  - Document the new workspace/session/artifact JSON format and command journal.
-  - Document which POC modules were reused, which old workflows were retired, and why the use cases shifted after the POC findings.
+## Reviewed State
+
+### Git history
+
+- Commit `b6620c2` introduced both the song-project POC and a first Session Studio implementation.
+- Commit `780f22c` is the best recovery source for the Session Studio; it contains the complete session UI before removal plus later audio-graph work.
+- Commit `13d2651` removed the Session Studio, its store/schema/storage/tests, WaveRoll, and its styles, and made the song-project POC the active shell.
+- Restore selected files from `780f22c`; do not revert the repository wholesale. The current worker, packaging, separation, audio validation, and Tauri fixes contain later improvements that must be retained.
+
+### Recoverable Session Studio
+
+The deleted snapshot contains useful first-pass implementations of:
+
+- `apps/desktop/src/features/session-studio/SessionStudio.tsx`;
+- `apps/desktop/src/app/sessionStore.ts`;
+- `apps/desktop/src/lib/session/schema.ts`;
+- `apps/desktop/src/lib/session/format.ts` and focused helper tests;
+- `apps/desktop/src/lib/session/storage.ts` and focused storage tests;
+- Session Studio CSS, the `wave-roll` dependency, and its JSX custom-element declaration;
+- working-directory selection, strict two-model preflight, collapsible/searchable/tag-filtered session sidebar, session creation, all three session views, prompt revisions, artifacts, export/reveal, conversion, separation, merge, and derived-session actions.
+
+### Current code worth retaining
+
+The current tree still has reusable, tested infrastructure:
+
+- the FastAPI worker and single-job render queue;
+- MLX/Metal MusicGen generation with AudioCraft CPU diagnostics;
+- strict medium/melody model-cache preflight;
+- `/midi/text`, `/midi/guide-wav`, and `/midi/from-audio` worker endpoints;
+- `pretty_midi`/SciPy guide rendering, Basic Pitch melodic conversion, and the Omnizart drum adapter;
+- six-output separation and level-aware non-destructive merging;
+- audio validation, atomic WAV publication, sidecars, waveform preview, and local asset-path helpers;
+- Tauri v2 plugins, filesystem scopes, worker sidecar packaging, and macOS bundle configuration;
+- useful POC visual language and audio controls.
+
+### Known defects in the deleted snapshot
+
+Do not treat restoration as completion. The reviewed snapshot has these known gaps:
+
+- Prompt archive tabs are display-only; old revisions cannot be selected for viewing.
+- Archive labels and artifact folders drift after repeated archives (`archive-N` labels can point at a different suffixed folder).
+- Stem Constructor can generate again against a locked revision and does not expose the same revision workflow as the other session types.
+- Manual reference audio remains an external absolute path instead of becoming a portable session artifact.
+- The cross-session artifact picker is flat, not the required session/revision/artifact tree, and one unreadable session can empty the whole picker.
+- Audio-derived sessions skip the required drum-removal/separation step before melodic MIDI extraction.
+- Derived sessions record lineage but do not fully materialize/reference their source chain for immediate use.
+- Text2midi launches a fresh model process once per requested result; it needs a cached worker-side adapter or an explicitly managed long-lived process.
+- Worker preflight does not report Text2midi, Basic Pitch, guide-WAV, separator, and drum-transcription capabilities as separate action-level readiness states.
+- Omnizart documents ARM macOS incompatibility. Its action must be capability-gated and isolated; it cannot be allowed to block the entire studio.
+- Reloading a remembered working directory does not automatically complete preflight, leaving the studio blocked until a manual check.
+- Model-setting edits can trigger overlapping preflight requests.
+- Session creation closes its form even when persistence or validation fails.
+- Session directory collision handling can make the folder name differ from the persisted session name without surfacing the distinction.
+- Invalid session folders are not isolated during scans; one malformed `session.json` can fail the full sidebar refresh.
+- Several journal actions use overly broad or incorrect command types (for example prompt editing as generation and volume editing as merge).
+- Only generated audio reliably receives a sidecar; MIDI, guides, conversions, separations, and merges need consistent provenance metadata.
+- Generation is sequential but lacks a clear per-artifact queue/cancel/retry UI and restart reconciliation.
+- The historical Session Studio had helper tests but no adequate store or end-to-end UI coverage. Its old “completed” history entry is not proof of product completeness.
+
+## Product Decisions
+
+- Model gate: folder/model setup remains accessible, but session creation and opening are blocked until both required MusicGen models pass local preflight.
+- Optional tools: missing Text2midi, Basic Pitch, separator, or drum-transcription dependencies disable only their corresponding actions with a structured explanation.
+- Drum MIDI: preserve the requested Omnizart adapter, but treat it as optional on Apple Silicon until a verified compatible runtime exists. Do not silently substitute another model.
+- Persistence: no database, cloud service, telemetry, account, or background upload.
+- Generation: every generation, conversion, separation, merge, and derived-session operation is explicit. Editing never renders automatically.
+- History: generated and converted files are non-destructive. Prompt revision folders and artifact lineage remain stable and inspectable.
+- POC handling: do not delete useful song-project infrastructure until the session product has ports for the pieces it reuses. The song-project shell must not be mounted in the shipped app.
+- CLI acceptance: `just test` is the intentional real-model CLI smoke command, not the deterministic unit-test command. It reads root `test_prompt.md` and creates exactly five independent MusicGen Medium composition variations.
+
+## Implementation Checklist
+
+### 0. Product authority and planning reset
+
+- [x] Review `idea.md`, repository docs, current implementation, Git history, and the deleted Session Studio snapshot.
+- [x] Identify `780f22c` as the selective recovery source.
+- [x] Archive the conflicting root and `docs/` plans.
+- [x] Establish `idea.md` and this file as the only product specification and active implementation plan.
+- [x] Record the known defects that must be fixed after restoration.
+- [ ] Commit the documentation-only planning reset after user review.
+
+### 1. Restore the product shell without regressing current infrastructure
+
+- [ ] Restore the session schema, format helpers, storage helpers, store, Session Studio UI, tests, WaveRoll integration, and only the required Session Studio styles from `780f22c`.
+- [ ] Mount Session Studio as the sole product entrypoint.
+- [ ] Keep the current worker sidecar build, Tauri capabilities, filesystem scopes, audio helpers, separation helpers, validation, and packaging changes.
+- [ ] Keep song-project modules unmounted and clearly marked as POC/reuse source; decide after feature parity whether to move them under a legacy folder.
+- [ ] Add a source/bundle assertion that the active entrypoint cannot mount the song-project browser/workspace.
+
+### 2. Make session persistence authoritative and resilient
+
+- [ ] Finalize strict Zod schemas for workspace metadata, sessions, prompt revisions, artifacts, lineage, export state, action capabilities, and append-only commands.
+- [ ] Define one stable folder layout for `session.json`, `commands.json`, active/revision artifact folders, sidecars, job records, and retained conversion/separation outputs.
+- [ ] Fix prompt revision label/folder allocation so each revision owns one immutable folder and viewable label.
+- [ ] Copy manually selected reference audio into the session and register it as an artifact before use.
+- [ ] Make workspace/session/command writes atomic and serialized without losing append-only journal entries after concurrent actions or restart.
+- [ ] Scan sessions independently, keep valid cards visible, and report malformed/unreadable siblings without failing the entire workspace.
+- [ ] Keep session names, directory names, collision suffixes, artifact counts, timestamps, tags, and last-selected session consistent.
+- [ ] Add explicit command types for prompt edits, reference selection/import, volume changes, retries/cancelation, and capability failures.
+- [ ] Write provenance sidecars for every produced artifact kind, not only MusicGen WAVs.
+
+### 3. Complete setup and capability preflight
+
+- [ ] Run preflight automatically after bootstrap, folder selection, and a debounced/explicit settings save.
+- [ ] Require local `facebook/musicgen-medium` and `facebook/musicgen-melody` before session creation/opening.
+- [ ] Report backend, device, cache paths, cache writability, both model states, and actionable setup errors.
+- [ ] Add separate readiness checks for Text2midi, MIDI guide dependencies, Basic Pitch, separator, ffmpeg/merge, and Omnizart.
+- [ ] Disable individual artifact actions when their optional capability is unavailable; keep unrelated session work usable.
+- [ ] Add stale-request protection so an older preflight response cannot overwrite newer settings.
+
+### 4. Finish the working-directory shell and session creation
+
+- [ ] Restore the wide collapsible session sidebar with search, tag filter, name, type, tags, and artifact count.
+- [ ] Persist sidebar state, known tags, model settings, and last selected session in workspace metadata.
+- [ ] Show the three central choices—Stem Constructor, Free Format, and Midi Generator—with the requested title, emoji, and concise description.
+- [ ] Keep default names `se-{yymmdd}-{N}` while allowing the user to edit the free-form name before creation.
+- [ ] Support BPM presets plus custom BPM, tag creation/selection, and optional export-folder selection.
+- [ ] Keep the creation form open and show field/action errors when creation fails.
+- [ ] Verify dense laptop and desktop layouts, keyboard navigation, focus states, tooltips, and stable control dimensions.
+
+### 5. Harden Text2midi and MIDI visualization
+
+- [ ] Replace per-result Text2midi model reloads with a cached adapter or long-lived worker process that can generate a requested batch.
+- [ ] Preserve local-only model/cache configuration and return structured dependency, model, input, generation, and publication errors.
+- [ ] Generate collision-safe MIDI artifacts with exact prompt, seed/settings where available, model version, and timing metadata.
+- [ ] Restore WaveRoll through a small typed React wrapper and pin a verified version.
+- [ ] Test Tauri asset URLs, multi-track MIDI, empty/corrupt MIDI, playback disposal, and multiple results on one screen.
+
+### 6. Implement correct prompt revisions and all three session types
+
+- [ ] Make archived prompt revisions selectable and read-only, with their artifacts visible under the matching revision.
+- [ ] Make `+` archive the current state without renaming old folders, then create the next collision-safe revision folder with the prior prompt copied and editable.
+- [ ] Lock a revision only after a generation request is durably recorded.
+- [ ] Free Format: prompt, quantity, optional imported/linked/tree-selected reference, Medium without reference, Melody with reference.
+- [ ] Midi Generator: prompt, quantity, locked generated revision, WaveRoll result previews, and later prompt revision creation.
+- [ ] Stem Constructor: all eleven requested constructors, four or five editable preset/custom fields, concise deterministic prompt builders, quantity, and the same revision rules.
+- [ ] Add prompt-builder fixtures for every constructor, including the atmospheric-pad example.
+
+### 7. Complete artifact lifecycle actions
+
+- [ ] Render stable artifact rows/cards for audio, MIDI, guide WAV, separated stem, premix, and conversion outputs.
+- [ ] Support rename, audio/MIDI preview, reveal, export, missing-file state, retry/cancel where applicable, and exact provenance display.
+- [ ] Export to the session export folder with collision-safe names and journal the source/destination.
+- [ ] Convert audio to melodic MIDI with Basic Pitch and to drum MIDI with the capability-gated Omnizart adapter.
+- [ ] Split audio non-destructively into retained stems, persist per-stem volume, and merge any selected subset without changing sources.
+- [ ] Build the required hierarchical reference picker: session → prompt revision/folder → artifact.
+- [ ] Keep every active artifact inside its session folder; represent external source files as copied/imported artifacts.
+
+### 8. Implement derived-session pipelines exactly
+
+- [ ] From MIDI: render a clean 32 kHz sine guide, generate a Melody-conditioned audio artifact in the current session, then create and open the chosen derived session with full lineage.
+- [ ] From audio: label the action `Start session from this melody`, separate/remove drums first, transcribe the clean melodic source to MIDI, render a sine guide, generate Melody-conditioned audio, then create/open the derived session.
+- [ ] Persist every intermediate artifact and relationship so failed pipelines are inspectable and restartable.
+- [ ] Generate readable collision-safe derived-session names from the source session/artifact/action.
+- [ ] Do not create the derived session until the required source audio is ready; retain earlier successful intermediates after later failure.
+
+### 9. CLI acceptance workflow
+
+- [ ] Add a headless CLI command dedicated to real MusicGen composition generation; it must not require Tauri or the web UI.
+- [ ] Make `just test` invoke that CLI with root `test_prompt.md` as its prompt source.
+- [ ] Normalize the Markdown prompt into intentional whitespace without changing its words.
+- [ ] Preflight the configured cache/backend and require local `facebook/musicgen-medium`; fail before publishing outputs when unavailable.
+- [ ] Generate exactly five independent text-only composition variations with `facebook/musicgen-medium`, distinct recorded seeds, and no melody/reference conditioning.
+- [ ] Publish each variation non-destructively under a timestamped test output directory with WAV, metadata sidecar, prompt hash, model, backend, device, seed, duration, validation metrics, and a batch manifest.
+- [ ] Keep partial successes and a structured failure report if a later variation fails; never overwrite an earlier batch.
+- [ ] Add CLI flags for output directory, duration, cache/backend, and seed base while keeping `just test` fixed to five variations and `test_prompt.md`.
+- [ ] Move deterministic repository checks to a clearly named command such as `just verify`; tests must never silently download model weights.
+- [ ] Run the real `just test` acceptance pass on the target Mac and inspect all five outputs before release.
+
+### 10. Verification and release readiness
+
+- [ ] Add schema/format tests for all session, artifact, lineage, revision, capability, and journal invariants.
+- [ ] Add storage tests for scan isolation, atomic writes, journal serialization, stable revision folders, import copying, export collisions, and missing assets.
+- [ ] Add store tests for model gating, failed creation, prompt locking/archive selection, batch progress, optional capabilities, retries, and derived pipelines.
+- [ ] Add UI tests for folder selection, sidebar collapse/search/filter, all creation types, all session views, artifact actions, and WaveRoll rendering.
+- [ ] Add worker tests for cached Text2midi batching, guide WAV, Basic Pitch, Omnizart error mapping, separation/merge, and structured preflight.
+- [ ] Keep fixture-backed tests model-free; run optional local smoke tests for each installed real model/tool.
+- [ ] Run `just verify`, Rust format/check, package the unsigned macOS app, and perform a real working-directory walkthrough.
+- [ ] Update README, setup, format, and implementation-history docs with only verified behavior; move completed plan details to history and leave only unfinished work here.
+
+## Definition Of Done
+
+The first proper version is done only when a user can select a working directory, pass the strict two-model gate, create and reopen each session type, generate and revisit prompt revisions, manage every artifact action, complete both MIDI-derived and audio-derived session flows, restart without losing state or lineage, run `just test` to obtain five valid MusicGen Medium compositions from `test_prompt.md`, and package/run the macOS app. Model-free checks must pass without downloads; unavailable optional tools must produce honest disabled states or structured errors.
 
 ## QnA
 
-- [x] What is the exact distinction between session `name` and `title` in the sidebar?
-  - answer: it's the same thing, by default se-{yymmdd}-{N} (N =1 if it is free, otherwise if 2 is free - it's 2, and so on, just next free int for today), you may change it.
-- [x] What default audio duration should new generation runs use?
-  - answer: default to 30 seconds or less (25 is desireable aim, better 25 than 30) to match MusicGen's common generation limit, then add duration controls only after the first proper version works.
-- [x] Which exact WaveRoll package/API should be used for MIDI visualization?
-  - answer: verify the maintained npm package before implementation; if WaveRoll is not installable or compatible with React 19/Vite, find modern compatible alternative that is properly maintained and widely accepted and has visual + audial preview.
-- [x] Should the app support Windows/Linux now, or continue the POC's macOS-first Tauri desktop target?
-  - answer: keep macOS-first for the first proper implementation because the POC worker/backend setup and local model assumptions are already macOS-oriented.
+No unresolved product questions. Omnizart's Apple Silicon limitation is an implementation constraint handled by action-level capability gating, not a reason to change the requested product silently.
