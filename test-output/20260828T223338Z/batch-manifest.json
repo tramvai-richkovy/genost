@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "running",
+  "status": "interrupted",
   "createdAt": "2026-08-28T22:33:38.147666Z",
   "promptFile": "/Volumes/T7/projects/genost/test_prompt.md",
   "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
@@ -82,5 +82,12 @@
     },
     "errors": []
   },
-  "variations": []
+  "variations": [],
+  "interruptedAt": "2026-08-29T06:37:58.782225Z",
+  "interruption": {
+    "reason": "missing-process-identity",
+    "activeVariation": null,
+    "lastHeartbeatAt": null
+  },
+  "heartbeatAt": "2026-08-29T06:37:58.782225Z"
 }

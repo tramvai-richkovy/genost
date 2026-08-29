@@ -11,7 +11,10 @@ This file preserves historical implementation work. Active work lives only in ro
 - Replaced per-result Text2midi launches with a local-only long-lived batch service, added the typed WaveRoll wrapper, and recorded Text2midi seeds/version/timing metadata.
 - Completed non-destructive artifact retry/cancel/progress and restart/missing-file reconciliation, hierarchical references, audio drum-removal before melodic extraction, retained intermediate lineage, and materialized derived-session source audio.
 - Added the headless five-variation MusicGen Medium acceptance CLI behind `just test` and moved deterministic checks to `just verify`.
-- Verified 106 desktop tests with 7 intentional skips, the TypeScript/Vite production build and product-shell assertion, focused model-free worker tests, Rust formatting, and Rust compilation. Full worker verification, real `just test`, and unsigned packaging were unavailable because this checkout did not contain the required `.venv`, local models, or built worker sidecar.
+- Made acceptance batches interruption-safe with `SIGINT`/`SIGTERM` manifest finalization, process identity and heartbeat metadata, and next-run reconciliation of abandoned manifests while retaining partial outputs.
+- Completed a real MLX/Metal acceptance batch with five distinct seeded 25-second MusicGen Medium WAVs, sidecars, full metrics, a ready manifest, and successful independent decode/integrity checks; subjective listening remains pending.
+- Fixed reproducible unsigned DMG packaging under macOS locale rules, bundled Basic Pitch ONNX data into the frozen worker, and verified the packaged app launches with both MusicGen models plus the real isolated Basic Pitch probe available.
+- Verified 112 desktop tests with 7 intentional skips, the TypeScript/Vite production build and product-shell assertion, all 56 model-free worker tests, Rust formatting/compilation, a checksum-valid unsigned DMG, and packaged worker preflight. Subjective acceptance listening and the full working-directory walkthrough remain pending.
 
 ## Product Direction Correction — 2026-08-29
 

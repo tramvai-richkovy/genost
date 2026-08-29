@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
   "status": "interrupted",
-  "createdAt": "2026-08-28T22:38:44.265658Z",
+  "createdAt": "2026-08-29T07:21:13.031883Z",
   "promptFile": "/Volumes/T7/projects/genost/test_prompt.md",
   "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
   "promptHash": "aa5bbddaa3fab8b3da6c0f3f271da63782f336753082d8907e633148158e2484",
   "model": "facebook/musicgen-medium",
   "quantity": 5,
   "durationSeconds": 25,
+  "validationProfile": "basic",
   "backendRequested": "auto",
   "modelCachePath": null,
   "hfHome": null,
@@ -83,11 +84,15 @@
     "errors": []
   },
   "variations": [],
-  "interruptedAt": "2026-08-29T06:37:58.782623Z",
+  "processId": 7399,
+  "processHost": "Andriis-MacBook-Pro.local",
+  "heartbeatAt": "2026-08-29T07:22:01.265068Z",
+  "activeVariation": 1,
+  "interruptedAt": "2026-08-29T07:22:01.265068Z",
   "interruption": {
-    "reason": "missing-process-identity",
-    "activeVariation": null,
-    "lastHeartbeatAt": null
-  },
-  "heartbeatAt": "2026-08-29T06:37:58.782623Z"
+    "reason": "signal",
+    "activeVariation": 1,
+    "lastHeartbeatAt": "2026-08-29T07:21:13.032463Z",
+    "signal": "SIGTERM"
+  }
 }

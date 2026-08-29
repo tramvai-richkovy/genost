@@ -146,7 +146,9 @@ Real MusicGen acceptance:
 just test
 ```
 
-This reads root `test_prompt.md` and produces exactly five MusicGen Medium WAVs under a new timestamped `test-output/` batch. Real generation, Text2midi, Basic Pitch, separation, and Omnizart checks require their local models and checkpoints. Model-free tests never download weights.
+This reads root `test_prompt.md` and produces exactly five MusicGen Medium WAVs under a new timestamped `test-output/` batch. The CLI rejects structurally invalid audio and records full spectral metrics for manual review; it does not apply a brightness-oriented content profile to the deliberately dark acceptance prompt. Interrupting the command with `SIGINT` or `SIGTERM` marks the batch manifest as interrupted while retaining completed and partial files; a later run also reconciles abandoned manifests whose local process is gone. Real generation, Text2midi, Basic Pitch, separation, and Omnizart checks require their local models and checkpoints. Model-free tests never download weights.
+
+Unsigned local packaging uses `npm run tauri:build` from `apps/desktop`. The command pins an installed macOS UTF-8 locale for DMG creation, skips signing prompts, and bundles the Basic Pitch ONNX model data with the worker sidecar.
 
 ## License Posture
 

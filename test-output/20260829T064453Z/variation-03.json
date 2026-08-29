@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifact": {
+    "index": 3,
+    "fileName": "variation-03.wav",
+    "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
+    "promptHash": "aa5bbddaa3fab8b3da6c0f3f271da63782f336753082d8907e633148158e2484",
+    "model": "facebook/musicgen-medium",
+    "backend": "mlx",
+    "device": "metal",
+    "seed": 1787985893961642,
+    "durationSeconds": 25,
+    "validationProfile": "basic",
+    "generationSeconds": 189.415436667,
+    "validationMetrics": {
+      "duration_seconds": 25.0,
+      "sample_rate": 32000,
+      "channels": 1,
+      "peak": 0.8397496938705444,
+      "rms_db": -15.547719976181726,
+      "dc_offset": 0.00023618056163191795,
+      "energy_below_500_hz": 0.9487042882910367,
+      "energy_above_2000_hz": 0.03230813866808415,
+      "rolloff_85_hz": 147.0,
+      "spectral_centroid_hz": 273.9711044176576,
+      "spectral_flatness": 0.01766857146874741,
+      "zero_crossings_per_second": 1502.96
+    },
+    "createdAt": "2026-08-29T06:54:44.636561Z"
+  }
+}

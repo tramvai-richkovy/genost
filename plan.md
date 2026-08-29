@@ -94,16 +94,20 @@ Implementation in the current uncommitted worktree now includes:
 - Python 3.10.17 dependency alignment for Apple Silicon: Basic Pitch 0.4 ONNX, setuptools below 81, scikit-learn through 1.5.1, Torch 2.7, Transformers 4.x, and SentencePiece. Basic Pitch probe/conversion runs in an isolated spawned process and the real 440 Hz probe passed.
 - A local-only low-memory MLX loader that memory-maps the MusicGen checkpoint and preserves its float16 tensors. This eliminated the observed >16 GB checkpoint-conversion peak and allowed a real Medium render to complete generation; the deliberately one-second smoke output was correctly rejected by music validation and retained a structured failure.
 - Long-lived batched Text2midi, typed WaveRoll integration, all three session types and prompt builders, artifact retry/cancel/export/conversion/separation/merge actions, derived-session pipelines, and the headless five-result acceptance CLI.
+- Acceptance CLI structural audio validation that preserves dark-material results while recording complete spectral metrics for review; content-specific session-render validation remains unchanged.
+- Packaged-worker Basic Pitch model data collection, discovered during the unsigned DMG launch walkthrough so the verified ONNX capability remains available outside the development virtual environment.
 - Laptop-width responsive rules, focus-visible styling, accessible icon-control names/tooltips, and WaveRoll cleanup/error/Tauri-URL tests.
 
-Verification completed before the stop request:
+Latest deterministic verification:
 
-- Desktop suite: 28 files passed and one skipped, 110 tests passed and seven intentionally skipped; the production TypeScript/Vite build and product-shell assertion passed. Targeted stable-folder/job-record storage coverage also passed after that full run.
-- Worker suite: 53 tests passed before the final isolated-Basic-Pitch test was added; the real isolated Basic Pitch smoke passed afterward.
-- Rust formatting and source compilation passed earlier using the no-sidecar source-check configuration.
-- `just test` was attempted three times. The first two runs were killed during the original high-memory MLX conversion. The final run used the low-memory loader and was still generating when the user asked to stop; PID 19030 was terminated and no WAV had yet been published. Its manifest is `test-output/20260828T223844Z/batch-manifest.json` and remains `status: "running"` because the CLI does not yet reconcile externally terminated batches.
+- `just verify` passes after the interruption-reconciliation changes: 28 desktop files passed and one skipped, 112 tests passed and seven intentionally skipped; the production TypeScript/Vite build and product-shell assertion passed; all 56 worker tests passed; and Rust formatting plus source compilation passed using the no-sidecar source-check configuration.
+- The real isolated Basic Pitch smoke passed earlier on the checked Apple Silicon environment.
+- Signal-safe manifest finalization and stale-process reconciliation are implemented, and all three earlier abandoned acceptance manifests have been reconciled to `status: "interrupted"` without removing their retained partial files.
+- A real `just test` pass completed on MLX/Metal in `test-output/20260829T064453Z`: the ready manifest owns exactly five distinct seeded 25-second, 32 kHz WAVs and five sidecars. All files were re-read, decoded through ffmpeg, hash/seed checked, and inspected for duration, channels, finite samples, peak, RMS, DC, and spectral metrics. Subjective listening remains a release review because this environment cannot consume audio.
+- The complete model-free worker suite now passes with 56 tests, including a real `SIGTERM` delivery test and dead/active/legacy acceptance-manifest reconciliation coverage.
+- The documented unsigned packaging command now produces both `GENOST.app` and a checksum-valid Apple Silicon DMG. A packaged-app launch reached worker health with MLX/Metal, both required models, MIDI guide, merge, and the isolated Basic Pitch ONNX inference probe available.
 
-Still required before the Definition of Done: rerun the complete deterministic suite after the final edits, finish the five-output real acceptance pass and inspect its audio, add interruption reconciliation for CLI manifests, close the broader store/UI/storage coverage listed below, build/run the unsigned app bundle, and perform a real Tauri working-directory walkthrough.
+Still required before the Definition of Done: complete subjective listening review of the five acceptance outputs, close the broader store/UI/storage coverage listed below, and perform a real Tauri working-directory walkthrough beyond the verified packaged startup/preflight smoke.
 
 ### 0. Product authority and planning reset
 
@@ -203,8 +207,9 @@ Still required before the Definition of Done: rerun the complete deterministic s
 - [x] Keep partial successes and a structured failure report if a later variation fails; never overwrite an earlier batch.
 - [x] Add CLI flags for output directory, duration, cache/backend, and seed base while keeping `just test` fixed to five variations and `test_prompt.md`.
 - [x] Move deterministic repository checks to a clearly named command such as `just verify`; tests must never silently download model weights.
-- [ ] Run the real `just test` acceptance pass on the target Mac and inspect all five outputs before release.
-- [ ] Reconcile or finalize an acceptance batch when its process is externally terminated; interrupted runs currently retain their partial files but can leave the manifest at `status: "running"`.
+- [x] Run the real `just test` acceptance pass on the target Mac and inspect the integrity, identity, metadata, decoding, and measured audio properties of all five outputs.
+- [ ] Complete subjective listening review of all five accepted WAVs before release.
+- [x] Reconcile or finalize an acceptance batch when its process is externally terminated, retaining partial files while recording the signal or stale-process reason.
 
 ### 10. Verification and release readiness
 
@@ -214,7 +219,8 @@ Still required before the Definition of Done: rerun the complete deterministic s
 - [ ] Add UI tests for folder selection, sidebar collapse/search/filter, all creation types, all session views, artifact actions, and WaveRoll rendering.
 - [ ] Add worker tests for cached Text2midi batching, guide WAV, Basic Pitch, Omnizart error mapping, separation/merge, and structured preflight.
 - [ ] Keep fixture-backed tests model-free; run optional local smoke tests for each installed real model/tool.
-- [ ] Run `just verify`, Rust format/check, package the unsigned macOS app, and perform a real working-directory walkthrough.
+- [x] Run `just verify`, Rust format/check, package the unsigned macOS app, verify its DMG checksum, and smoke-launch its bundled worker/preflight.
+- [ ] Perform a real packaged-app working-directory walkthrough through session creation/opening and artifact actions.
 - [ ] Update README, setup, format, and implementation-history docs with only verified behavior; move completed plan details to history and leave only unfinished work here.
 
 ## Definition Of Done

@@ -4,7 +4,7 @@ GENOST is a local-first macOS session studio for AI-assisted music generation. I
 
 Root [idea.md](idea.md) is the authoritative product specification and root [plan.md](plan.md) is the only active implementation plan. The song-project DAW described by [docs/original-idea.md](docs/original-idea.md) and currently present in parts of the source tree is proof-of-concept infrastructure, not the product.
 
-Status: Session Studio is the sole desktop entrypoint. The restored implementation now includes portable workspace/session persistence, strict two-model gating, isolated optional capabilities, immutable prompt revisions, artifact provenance and sidecars, non-destructive retry/cancel flows, MIDI/audio-derived pipelines, and the headless acceptance CLI. Real-model walkthrough and unsigned packaging still require the configured local models and worker environment.
+Status: Session Studio is the sole desktop entrypoint. The restored implementation now includes portable workspace/session persistence, strict two-model gating, isolated optional capabilities, immutable prompt revisions, artifact provenance and sidecars, non-destructive retry/cancel flows, MIDI/audio-derived pipelines, and the headless acceptance CLI. The five-output MusicGen Medium acceptance batch and unsigned packaged-app startup/preflight have passed technical inspection; subjective listening and a complete working-directory walkthrough remain.
 
 ## Workflow
 
@@ -74,6 +74,6 @@ The intentional real-model acceptance command is:
 just test
 ```
 
-It preflights local `facebook/musicgen-medium`, reads [test_prompt.md](test_prompt.md), and publishes exactly five independent, seeded variations with sidecars and a batch manifest under `test-output/`. It never downloads weights or overwrites an older batch.
+It preflights local `facebook/musicgen-medium`, reads [test_prompt.md](test_prompt.md), and publishes exactly five independent, seeded variations with sidecars and a batch manifest under `test-output/`. Acceptance rejects structurally invalid audio and records full spectral metrics for manual review without imposing a brightness profile on dark material. It never downloads weights or overwrites an older batch. `SIGINT`/`SIGTERM` finalizes the active manifest as interrupted, and the next run reconciles abandoned manifests whose recorded process is no longer alive.
 
 See [docs/macos-setup.md](docs/macos-setup.md) and [plan.md](plan.md).

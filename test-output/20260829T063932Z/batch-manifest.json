@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "interrupted",
-  "createdAt": "2026-08-28T22:38:44.265658Z",
+  "status": "failed",
+  "createdAt": "2026-08-29T06:39:32.575533Z",
   "promptFile": "/Volumes/T7/projects/genost/test_prompt.md",
   "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
   "promptHash": "aa5bbddaa3fab8b3da6c0f3f271da63782f336753082d8907e633148158e2484",
@@ -83,11 +83,18 @@
     "errors": []
   },
   "variations": [],
-  "interruptedAt": "2026-08-29T06:37:58.782623Z",
-  "interruption": {
-    "reason": "missing-process-identity",
-    "activeVariation": null,
-    "lastHeartbeatAt": null
-  },
-  "heartbeatAt": "2026-08-29T06:37:58.782623Z"
+  "processId": 2827,
+  "processHost": "Andriis-MacBook-Pro.local",
+  "heartbeatAt": "2026-08-29T06:43:08.665020Z",
+  "activeVariation": 1,
+  "failedAt": "2026-08-29T06:43:08.665020Z",
+  "failure": {
+    "schemaVersion": 1,
+    "status": "failed",
+    "failedIndex": 1,
+    "seed": 1787985572575528,
+    "errorType": "GeneratorError",
+    "error": "Generated audio failed music/generic validation: insufficient energy above 2 kHz 1.0%; degenerate spectral centroid 156 Hz",
+    "createdAt": "2026-08-29T06:43:08.662779Z"
+  }
 }

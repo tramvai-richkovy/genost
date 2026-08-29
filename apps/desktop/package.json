@@ -14,7 +14,7 @@
     "worker:build": "../../scripts/build-worker-sidecar.sh",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "npm run worker:build && tauri build"
+    "tauri:build": "npm run worker:build && LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 tauri build --ci --no-sign"
   },
   "dependencies": {
     "@rintran720/cyberpunk-ui": "^0.1.1",

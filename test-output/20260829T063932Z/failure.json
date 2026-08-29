@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "failedIndex": 1,
+  "seed": 1787985572575528,
+  "errorType": "GeneratorError",
+  "error": "Generated audio failed music/generic validation: insufficient energy above 2 kHz 1.0%; degenerate spectral centroid 156 Hz",
+  "createdAt": "2026-08-29T06:43:08.662779Z"
+}

@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
-  "status": "interrupted",
-  "createdAt": "2026-08-28T22:38:44.265658Z",
+  "status": "ready",
+  "createdAt": "2026-08-29T06:44:53.961645Z",
   "promptFile": "/Volumes/T7/projects/genost/test_prompt.md",
   "prompt": "Ritual industrial downtempo theme: ruined Tokyo, spectral choir, corroded guitars",
   "promptHash": "aa5bbddaa3fab8b3da6c0f3f271da63782f336753082d8907e633148158e2484",
   "model": "facebook/musicgen-medium",
   "quantity": 5,
   "durationSeconds": 25,
+  "validationProfile": "basic",
   "backendRequested": "auto",
   "modelCachePath": null,
   "hfHome": null,
@@ -82,12 +83,45 @@
     },
     "errors": []
   },
-  "variations": [],
-  "interruptedAt": "2026-08-29T06:37:58.782623Z",
-  "interruption": {
-    "reason": "missing-process-identity",
-    "activeVariation": null,
-    "lastHeartbeatAt": null
-  },
-  "heartbeatAt": "2026-08-29T06:37:58.782623Z"
+  "variations": [
+    {
+      "index": 1,
+      "status": "ready",
+      "audioPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-01.wav",
+      "sidecarPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-01.json",
+      "seed": 1787985893961640
+    },
+    {
+      "index": 2,
+      "status": "ready",
+      "audioPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-02.wav",
+      "sidecarPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-02.json",
+      "seed": 1787985893961641
+    },
+    {
+      "index": 3,
+      "status": "ready",
+      "audioPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-03.wav",
+      "sidecarPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-03.json",
+      "seed": 1787985893961642
+    },
+    {
+      "index": 4,
+      "status": "ready",
+      "audioPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-04.wav",
+      "sidecarPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-04.json",
+      "seed": 1787985893961643
+    },
+    {
+      "index": 5,
+      "status": "ready",
+      "audioPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-05.wav",
+      "sidecarPath": "/Volumes/T7/projects/genost/test-output/20260829T064453Z/variation-05.json",
+      "seed": 1787985893961644
+    }
+  ],
+  "processId": 2968,
+  "processHost": "Andriis-MacBook-Pro.local",
+  "heartbeatAt": "2026-08-29T07:01:03.807289Z",
+  "completedAt": "2026-08-29T07:01:03.807289Z"
 }
